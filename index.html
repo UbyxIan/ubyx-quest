@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ubyx Global Quest - The Path to Universal Digital Money</title>
+
+<!-- Open Graph tags for LinkedIn / social sharing -->
+<meta property="og:title" content="Ubyx Quest - The Path to Universal Digital Money">
+<meta property="og:description" content="Navigate 5 global financial hubs and chart the course for Ubyx to become the universal acceptance network for regulated digital money. A pixel art adventure game.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ubyxian.github.io/ubyx-quest/">
+<meta name="description" content="An interactive pixel art adventure game charting the path for Ubyx to become a global acceptance network for regulated digital money, tokenised deposits and regulated stablecoins.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Ubyx Quest - The Path to Universal Digital Money">
+<meta name="twitter:description" content="Navigate 5 global financial hubs in this pixel art adventure. Can you chart the course for universal digital money acceptance?">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a1a;
+    font-family: 'Press Start 2P', monospace;
+    color: #e0e0e0;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  #game-container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+    image-rendering: pixelated;
+  }
+
+  #scene-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+  }
+
+  /* Player character */
+  #player {
+    position: absolute;
+    bottom: 80px;
+    left: 60px;
+    z-index: 10;
+    image-rendering: pixelated;
+    transition: left 0.8s ease-in-out;
+  }
+
+  /* NPC */
+  #npc {
+    position: absolute;
+    bottom: 80px;
+    right: 100px;
+    z-index: 9;
+    image-rendering: pixelated;
+    display: none;
+  }
+  #npc.visible { display: block; }
+
+  /* HUD */
+  #hud {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 20;
+    pointer-events: none;
+  }
+  #hud > * { pointer-events: auto; }
+
+  #progress-bar-container {
+    position: absolute;
+    top: 16px; left: 16px; right: 16px;
+    height: 28px;
+    background: #1a1a2e;
+    border: 3px solid #4a9eff;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 0 12px rgba(74, 158, 255, 0.3);
+  }
+
+  #progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00d4ff, #4a9eff, #a855f7);
+    transition: width 0.8s ease;
+    position: relative;
+  }
+
+  #progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(255,255,255,0.1) 8px, rgba(255,255,255,0.1) 16px);
+  }
+
+  #progress-text {
+    position: absolute;
+    top: 50px;
+    left: 16px;
+    font-size: 8px;
+    color: #4a9eff;
+    text-shadow: 0 0 6px rgba(74, 158, 255, 0.5);
+  }
+
+  #hub-markers {
+    position: absolute;
+    top: 18px; left: 16px; right: 16px;
+    height: 24px;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 2%;
+  }
+
+  .hub-marker {
+    font-size: 6px;
+    color: #666;
+    text-align: center;
+    transition: color 0.5s;
+    margin-top: 30px;
+  }
+  .hub-marker.active { color: #4a9eff; }
+  .hub-marker.completed { color: #00ff88; }
+
+  #score-display {
+    position: absolute;
+    top: 80px; right: 20px;
+    font-size: 10px;
+    color: #ffd700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+  }
+
+  #lives-display {
+    position: absolute;
+    top: 80px; left: 20px;
+    font-size: 10px;
+    color: #ff4444;
+    text-shadow: 0 0 8px rgba(255, 68, 68, 0.5);
+  }
+
+  /* Dialogue box */
+  #dialogue-box {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(92%, 780px);
+    background: linear-gradient(180deg, #1a1a3eee 0%, #0d0d2bee 100%);
+    border: 3px solid #4a9eff;
+    border-radius: 8px;
+    padding: 20px 24px;
+    display: none;
+    box-shadow: 0 0 30px rgba(74, 158, 255, 0.2), inset 0 0 30px rgba(0, 0, 0, 0.5);
+  }
+  #dialogue-box.visible { display: block; }
+
+  #speaker-name {
+    font-size: 9px;
+    color: #00ff88;
+    margin-bottom: 12px;
+    text-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+  }
+
+  #dialogue-text {
+    font-size: 8px;
+    line-height: 2;
+    color: #ccc;
+    margin-bottom: 16px;
+    min-height: 40px;
+  }
+
+  #choices-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .choice-btn {
+    background: #111130;
+    border: 2px solid #333366;
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: #aaa;
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.8;
+    transition: all 0.2s;
+  }
+  .choice-btn:hover {
+    border-color: #4a9eff;
+    color: #fff;
+    background: #1a1a4e;
+    box-shadow: 0 0 12px rgba(74, 158, 255, 0.2);
+  }
+  .choice-btn.correct {
+    border-color: #00ff88;
+    background: #0a2a1a;
+    color: #00ff88;
+    animation: correctPulse 0.6s;
+  }
+  .choice-btn.wrong {
+    border-color: #ff4444;
+    background: #2a0a0a;
+    color: #ff4444;
+    animation: wrongShake 0.5s;
+  }
+
+  @keyframes correctPulse {
+    0%, 100% { box-shadow: 0 0 0px rgba(0,255,136,0); }
+    50% { box-shadow: 0 0 25px rgba(0,255,136,0.5); }
+  }
+  @keyframes wrongShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+
+  #continue-prompt {
+    font-size: 7px;
+    color: #4a9eff;
+    text-align: center;
+    margin-top: 12px;
+    display: none;
+    animation: blink 1s infinite;
+    cursor: pointer;
+  }
+  #continue-prompt.visible { display: block; }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Info banner */
+  #info-banner {
+    position: absolute;
+    top: 110px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 7px;
+    color: #a855f7;
+    text-align: center;
+    line-height: 2;
+    opacity: 0;
+    transition: opacity 0.5s;
+    text-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
+    max-width: 80%;
+  }
+  #info-banner.visible { opacity: 1; }
+
+  /* Title screen */
+  #title-screen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #0d1b3e 0%, #0a0a1a 70%);
+  }
+
+  #title-screen h1 {
+    font-size: 28px;
+    color: #4a9eff;
+    text-shadow: 0 0 20px rgba(74, 158, 255, 0.6), 0 4px 0 #1a3a6e;
+    margin-bottom: 8px;
+    letter-spacing: 6px;
+  }
+
+  #title-screen .subtitle {
+    font-size: 8px;
+    color: #a855f7;
+    margin-bottom: 40px;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+    text-align: center;
+    line-height: 2.2;
+    max-width: 600px;
+  }
+
+  #start-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: #fff;
+    background: linear-gradient(180deg, #4a9eff 0%, #2a5ecf 100%);
+    border: 3px solid #6ab4ff;
+    border-radius: 6px;
+    padding: 16px 40px;
+    cursor: pointer;
+    animation: btnPulse 2s infinite;
+    transition: transform 0.2s;
+  }
+  #start-btn:hover { transform: scale(1.05); }
+
+  @keyframes btnPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(74, 158, 255, 0.3); }
+    50% { box-shadow: 0 0 25px rgba(74, 158, 255, 0.6); }
+  }
+
+  .floating-token {
+    position: absolute;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffd700, #b8860b);
+    border: 2px solid #ffd700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #4a2800;
+    font-weight: bold;
+    animation: floatToken 4s ease-in-out infinite;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+  }
+
+  @keyframes floatToken {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(10deg); }
+  }
+
+  /* Victory screen */
+  #victory-screen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 50;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #0a2a1a 0%, #0a0a1a 70%);
+  }
+  #victory-screen.visible { display: flex; }
+  #victory-screen h1 { font-size: 22px; color: #00ff88; text-shadow: 0 0 20px rgba(0, 255, 136, 0.6); margin-bottom: 20px; }
+  #victory-screen .final-score { font-size: 12px; color: #ffd700; margin-bottom: 10px; }
+  #victory-screen .victory-msg { font-size: 7px; color: #aaa; text-align: center; line-height: 2.4; max-width: 600px; margin-bottom: 30px; }
+
+  #restart-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px; color: #fff;
+    background: linear-gradient(180deg, #00ff88 0%, #00aa55 100%);
+    border: 3px solid #44ffaa;
+    border-radius: 6px;
+    padding: 14px 36px;
+    cursor: pointer;
+    animation: btnPulse 2s infinite;
+  }
+
+  /* Game Over screen */
+  #gameover-screen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 50;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #2a0a0a 0%, #0a0a1a 70%);
+  }
+  #gameover-screen.visible { display: flex; }
+  #gameover-screen h1 { font-size: 22px; color: #ff4444; text-shadow: 0 0 20px rgba(255, 68, 68, 0.6); margin-bottom: 20px; }
+  #gameover-screen .gameover-msg { font-size: 7px; color: #aaa; text-align: center; line-height: 2.4; max-width: 500px; margin-bottom: 30px; }
+
+  #retry-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px; color: #fff;
+    background: linear-gradient(180deg, #ff4444 0%, #aa2222 100%);
+    border: 3px solid #ff6666;
+    border-radius: 6px;
+    padding: 14px 36px;
+    cursor: pointer;
+  }
+
+  /* Transition overlay */
+  #transition-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: #0a0a1a;
+    z-index: 40;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  #transition-overlay.visible { display: flex; }
+
+  #transition-city-name {
+    font-size: 18px;
+    color: #4a9eff;
+    text-shadow: 0 0 20px rgba(74, 158, 255, 0.6);
+    margin-bottom: 12px;
+  }
+
+  #transition-subtitle {
+    font-size: 8px;
+    color: #a855f7;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+  }
+
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 15;
+  }
+
+  @media (max-width: 600px) {
+    #title-screen h1 { font-size: 18px; }
+    .choice-btn { font-size: 6px; padding: 10px 12px; }
+    #dialogue-text { font-size: 7px; }
+    #dialogue-box { padding: 14px 16px; bottom: 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="scene-canvas"></canvas>
+
+  <canvas id="player" width="64" height="80"></canvas>
+  <canvas id="npc" width="64" height="80"></canvas>
+
+  <div id="hud">
+    <div id="progress-bar-container">
+      <div id="progress-bar"></div>
+    </div>
+    <div id="hub-markers">
+      <div class="hub-marker" data-hub="0">NEW YORK</div>
+      <div class="hub-marker" data-hub="1">LONDON</div>
+      <div class="hub-marker" data-hub="2">SINGAPORE</div>
+      <div class="hub-marker" data-hub="3">DUBAI</div>
+      <div class="hub-marker" data-hub="4">TOKYO</div>
+    </div>
+    <div id="progress-text">GLOBAL ADOPTION: 0%</div>
+    <div id="lives-display">&#9829; &#9829; &#9829;</div>
+    <div id="score-display">SCORE: 0</div>
+    <div id="info-banner"></div>
+    <div id="dialogue-box">
+      <div id="speaker-name"></div>
+      <div id="dialogue-text"></div>
+      <div id="choices-container"></div>
+      <div id="continue-prompt">[ PRESS SPACE OR CLICK TO CONTINUE ]</div>
+    </div>
+  </div>
+
+  <div id="title-screen">
+    <div class="floating-token" style="top: 15%; left: 20%; animation-delay: 0s;">U</div>
+    <div class="floating-token" style="top: 25%; right: 22%; animation-delay: 1s;">$</div>
+    <div class="floating-token" style="top: 60%; left: 15%; animation-delay: 2s;">B</div>
+    <div class="floating-token" style="top: 65%; right: 18%; animation-delay: 0.5s;">T</div>
+    <div class="floating-token" style="top: 40%; left: 75%; animation-delay: 1.5s;">X</div>
+    <h1>UBYX QUEST</h1>
+    <div class="subtitle">THE PATH TO UNIVERSAL<br>DIGITAL MONEY ACCEPTANCE</div>
+    <button id="start-btn">START QUEST</button>
+  </div>
+
+  <div id="victory-screen">
+    <h1>QUEST COMPLETE!</h1>
+    <div class="final-score">FINAL SCORE: <span id="final-score-val">0</span></div>
+    <div class="victory-msg">
+      Ubyx has achieved global acceptance!<br><br>
+      Regulated digital money now flows<br>
+      seamlessly across borders through<br>
+      a universal clearing network.<br><br>
+      Banks, fintechs, and stablecoin issuers<br>
+      are connected - enabling par value<br>
+      redemption everywhere.
+    </div>
+    <button id="restart-btn">PLAY AGAIN</button>
+  </div>
+
+  <div id="gameover-screen">
+    <h1>GAME OVER</h1>
+    <div class="gameover-msg">
+      The path to global digital money<br>
+      acceptance has hit a roadblock.<br><br>
+      Too many wrong turns on this<br>
+      journey. Try again!
+    </div>
+    <button id="retry-btn">TRY AGAIN</button>
+  </div>
+
+  <div id="transition-overlay">
+    <div id="transition-city-name"></div>
+    <div id="transition-subtitle"></div>
+  </div>
+</div>
+
+<script>
+// ─── GAME DATA ─────────────────────────────────────────
+const HUBS = [
+  {
+    name: "NEW YORK",
+    subtitle: "Where the Vision Begins",
+    color: "#4a9eff",
+    npcName: "TONY MCLAUGHLIN",
+    npcTitle: "Founder, Ubyx",
+    intro: "Welcome to New York - the birthplace of Ubyx. After 30 years in banking, I founded Ubyx to solve the fundamental problem: how do we make regulated digital money universally accepted?",
+    questions: [
+      {
+        text: "Before building Ubyx, the founder published a foundational white paper at Citi in 2022. What was it called, and what concept did it introduce?",
+        choices: [
+          { text: "The Regulated Liability Network - a blueprint for bank-led digital money where commercial bank deposits, e-money, and central bank money coexist as regulated liabilities on shared ledger infrastructure", correct: true },
+          { text: "The Decentralised Finance Protocol - a framework for replacing traditional banks with fully autonomous smart contracts on public blockchains", correct: false },
+          { text: "The Universal Crypto Standard - a proposal for governments to adopt Bitcoin as legal tender alongside existing fiat currencies", correct: false }
+        ],
+        explanation: "The Regulated Liability Network was a key white paper that laid the intellectual foundation for Ubyx - envisioning regulated digital money coexisting on shared infrastructure."
+      },
+      {
+        text: "Ubyx raised $10M in its seed round in June 2025, led by Galaxy Ventures. The round included strategic investors who signal both crypto-native and traditional finance support. What is Ubyx's core operating model?",
+        choices: [
+          { text: "An exchange model where stablecoins are traded at market prices, with Ubyx taking a spread on each trade like a foreign exchange platform", correct: false },
+          { text: "A collection model where tokenised money is deposited for clearing and redeemed at par value - like depositing a cheque at a bank - connecting issuers with receiving institutions", correct: true },
+          { text: "A lending model where stablecoins are pooled and lent out to borrowers, with interest distributed to depositors through smart contracts", correct: false }
+        ],
+        explanation: "Ubyx operates a collection model - not an exchange. Participants deposit tokenised money for redemption at par value, just like the cheque clearing system but for digital money."
+      }
+    ]
+  },
+  {
+    name: "LONDON",
+    subtitle: "Winning the Banks",
+    color: "#ff8844",
+    npcName: "BARCLAYS DIGITAL ASSETS LEAD",
+    npcTitle: "Strategic Partner",
+    intro: "London - the heart of global banking. For Ubyx to succeed, major regulated banks need to join the network. Barclays became the first major bank to invest in Ubyx in January 2026, signalling that the traditional finance world is ready.",
+    questions: [
+      {
+        text: "Barclays' investment in Ubyx in January 2026 was significant because it was the bank's first investment in a stablecoin company. Why do established banks prefer an interoperability solution like Ubyx over issuing their own proprietary stablecoins?",
+        choices: [
+          { text: "Banks are legally prohibited from creating their own stablecoins under current regulations in all jurisdictions worldwide", correct: false },
+          { text: "A shared neutral clearing network solves the many-to-many problem - connecting multiple issuers across multiple blockchains with multiple receiving institutions - without each bank needing bilateral integrations", correct: true },
+          { text: "Banks prefer to avoid blockchain technology entirely and only use Ubyx because it operates on traditional payment rails without any blockchain involvement", correct: false }
+        ],
+        explanation: "Ubyx solves the geometric complexity of the many-to-many problem. Rather than each institution building bilateral connections, a shared clearing network provides universal connectivity."
+      },
+      {
+        text: "The Ubyx Clearing System processes transactions in three sequential steps. A customer deposits a stablecoin at their bank. What happens next through the Ubyx network?",
+        choices: [
+          { text: "The stablecoin is sold on an open market exchange, converted to fiat at the prevailing market rate, and the proceeds minus fees are sent to the customer's account", correct: false },
+          { text: "The bank submits a clearing request; Ubyx validates the transaction and matches it with the issuer; then the stablecoin is redeemed from reserves at par value and the customer is credited in local fiat currency", correct: true },
+          { text: "The stablecoin is locked in a smart contract for 30 days while the bank performs manual compliance checks, after which it is slowly converted to fiat in daily batches", correct: false }
+        ],
+        explanation: "Deposit, Clear, Settle - the three steps mirror traditional clearing but for digital money. Compliance checks happen at every layer, and redemption is at par value from issuer reserves."
+      }
+    ]
+  },
+  {
+    name: "SINGAPORE",
+    subtitle: "Building the Multi-Chain Bridge",
+    color: "#00ff88",
+    npcName: "INFRASTRUCTURE ARCHITECT",
+    npcTitle: "Ubyx Launch Partner",
+    intro: "Singapore - Asia's fintech capital and a hub for blockchain innovation. Ubyx must work across many different blockchains and custody providers. The launch partner ecosystem is critical - from Axelar for cross-chain messaging to Fireblocks for custody.",
+    questions: [
+      {
+        text: "Ubyx supports 15+ blockchains at launch including Ethereum L2s, Solana, Stellar, and enterprise chains like Canton. With 18 launch partners providing infrastructure, what is the key technical challenge this solves?",
+        choices: [
+          { text: "It forces all stablecoin issuers to migrate to a single blockchain, simplifying the architecture but requiring issuers to abandon their existing deployments", correct: false },
+          { text: "Multi-chain interoperability - ensuring that stablecoins issued on any supported blockchain can be cleared and settled through a single unified network, using partners like Axelar, Fireblocks, and Chainalysis", correct: true },
+          { text: "It creates a new proprietary blockchain called UbyxChain that replaces all existing blockchains and requires all participants to rebuild their applications from scratch", correct: false }
+        ],
+        explanation: "Ubyx is blockchain-agnostic. Through infrastructure partners, it connects stablecoins across all major chains into one clearing system - no chain migration needed."
+      },
+      {
+        text: "Ubyx launched with 15+ stablecoin issuers including Paxos, Ripple, Monerium, and regional players like BiLira and Transfero. Why is this pluralistic approach - many issuers rather than one dominant stablecoin - important?",
+        choices: [
+          { text: "A pluralistic market with many regulated issuers connected through shared infrastructure mirrors the structure of the card network industry and prevents systemic risk from concentration in a single issuer", correct: true },
+          { text: "Having many issuers is a temporary phase; Ubyx plans to eventually select one winning stablecoin and mandate that all participants use only that currency", correct: false },
+          { text: "Multiple issuers are needed because each blockchain can only support one type of stablecoin, so more blockchains require more issuers by technical necessity", correct: false }
+        ],
+        explanation: "Like Visa connecting thousands of card issuers, Ubyx envisions a pluralistic market. Many regulated issuers competing through shared infrastructure is healthier than monopoly."
+      }
+    ]
+  },
+  {
+    name: "DUBAI",
+    subtitle: "Crossing Borders",
+    color: "#ffd700",
+    npcName: "AB XELERATE DIRECTOR",
+    npcTitle: "Arab Bank Fintech Arm",
+    intro: "Dubai - gateway between East and West. In February 2026, AB Xelerate - the fintech arm of Arab Bank - invested in Ubyx. This signals the network's expansion into cross-border trade corridors connecting the Middle East with global markets.",
+    questions: [
+      {
+        text: "AB Xelerate's investment in Ubyx specifically highlights the importance of cross-border financial infrastructure. For regulated digital money to transform international payments, what critical capability must the Ubyx Rulebook provide?",
+        choices: [
+          { text: "The Rulebook should eliminate all compliance requirements to make cross-border transfers as fast as possible, bypassing local regulations in favour of speed", correct: false },
+          { text: "A common set of rules that all participants - issuers, receiving institutions, and settlement banks - agree to follow, ensuring consistent AML, KYC, and sanctions screening across every jurisdiction in the network", correct: true },
+          { text: "The Rulebook should require that all cross-border transactions be denominated exclusively in US dollars, removing the need to support local currencies", correct: false }
+        ],
+        explanation: "The Ubyx Rulebook is the governance framework that makes cross-border clearing possible - standardising compliance while respecting local regulations across jurisdictions."
+      },
+      {
+        text: "For corporates and treasurers to adopt stablecoins for cross-border payments and trade, what accounting milestone does Ubyx's founder identify as a critical enabler?",
+        choices: [
+          { text: "Stablecoins must be banned from corporate balance sheets to prevent regulatory scrutiny, with all holdings converted to fiat before quarterly reporting deadlines", correct: false },
+          { text: "Stablecoins need to be classified as speculative investments on balance sheets, similar to cryptocurrency holdings like Bitcoin or Ethereum", correct: false },
+          { text: "Stablecoins achieving cash equivalent status on corporate balance sheets, allowing treasurers to hold and use them just like bank deposits without adverse accounting treatment", correct: true }
+        ],
+        explanation: "Cash equivalent status is the unlock for corporate adoption. When stablecoins can sit on balance sheets like bank deposits, treasurers can confidently integrate them into payment flows."
+      }
+    ]
+  },
+  {
+    name: "TOKYO",
+    subtitle: "Global Network Achieved",
+    color: "#ff6699",
+    npcName: "UBYX ASSOCIATION CHAIR",
+    npcTitle: "Industry Governance",
+    intro: "Tokyo - where tradition meets the future. As Ubyx achieves global reach, the governance model evolves. The Ubyx Association brings together participants, regulators, and stakeholders to guide the network's growth toward progressive decentralisation.",
+    questions: [
+      {
+        text: "As Ubyx scales globally, the network effect becomes self-reinforcing. The Galaxy Ventures investment thesis compared Ubyx to a specific type of existing financial infrastructure. What is the analogy and why does it matter?",
+        choices: [
+          { text: "Ubyx is like a cryptocurrency exchange - it makes money by trading stablecoins at fluctuating prices and earns revenue from bid-ask spreads between buyers and sellers", correct: false },
+          { text: "Ubyx is like a card network (Visa/Mastercard) for stablecoins - it becomes more valuable as more issuers and receiving institutions join, creating a two-sided network effect where ubiquity drives adoption", correct: true },
+          { text: "Ubyx is like a central bank - it sets monetary policy for digital currencies and has the authority to issue or destroy stablecoins to manage the global digital money supply", correct: false }
+        ],
+        explanation: "The card network analogy is central to Ubyx's thesis. Like Visa, Ubyx becomes more valuable with each new participant, creating a network effect that drives stablecoin ubiquity."
+      },
+      {
+        text: "The Ubyx Association envisions progressive decentralisation of both governance and technology over time. What does this mean for the long-term future of the regulated digital money ecosystem?",
+        choices: [
+          { text: "Ubyx will eventually shut down completely, leaving each bank to build its own isolated clearing system with no shared infrastructure or common standards", correct: false },
+          { text: "All governance will immediately be handed to a single government regulator who will make all decisions about the network's operations and technical standards", correct: false },
+          { text: "Governance gradually shifts from centralised founding leadership to a broader community of participants and stakeholders, while technology evolves toward more open and distributed architecture - ensuring no single entity controls the global clearing network", correct: true }
+        ],
+        explanation: "Progressive decentralisation ensures the network remains neutral shared infrastructure. As the ecosystem matures, governance broadens and technology becomes more distributed."
+      }
+    ]
+  }
+];
+
+// ─── GAME STATE ────────────────────────────────────────
+let state = {
+  currentHub: 0,
+  currentQuestion: 0,
+  score: 0,
+  lives: 3,
+  phase: 'title',
+  answered: false,
+  totalCorrect: 0
+};
+
+const P = 4; // pixel scale factor
+
+// ─── DRAWING HELPERS ───────────────────────────────────
+function px(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(w), Math.floor(h));
+}
+
+// ─── FULL SCENE RENDERER ──────────────────────────────
+function drawScene(hubIndex) {
+  const canvas = document.getElementById('scene-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
+
+  const groundY = H - 80;
+
+  switch(hubIndex) {
+    case 0: drawNewYork(ctx, W, H, groundY); break;
+    case 1: drawLondon(ctx, W, H, groundY); break;
+    case 2: drawSingapore(ctx, W, H, groundY); break;
+    case 3: drawDubai(ctx, W, H, groundY); break;
+    case 4: drawTokyo(ctx, W, H, groundY); break;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// NEW YORK - Statue of Liberty + Manhattan skyline
+// ═══════════════════════════════════════════════════════
+function drawNewYork(ctx, W, H, groundY) {
+  // Sky - deep blue night
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+  skyGrad.addColorStop(0, '#050520');
+  skyGrad.addColorStop(0.4, '#0a0a3a');
+  skyGrad.addColorStop(0.7, '#101850');
+  skyGrad.addColorStop(1, '#1a2040');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, groundY);
+
+  // Stars
+  drawStars(ctx, W, groundY * 0.5);
+
+  // Moon
+  ctx.fillStyle = '#ffffdd';
+  ctx.beginPath();
+  ctx.arc(W * 0.85, H * 0.15, 25, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#050520';
+  ctx.beginPath();
+  ctx.arc(W * 0.85 + 8, H * 0.15 - 4, 22, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Water reflection at base
+  const waterGrad = ctx.createLinearGradient(0, groundY - 60, 0, groundY);
+  waterGrad.addColorStop(0, '#0a1030');
+  waterGrad.addColorStop(1, '#0a0820');
+  ctx.fillStyle = waterGrad;
+  ctx.fillRect(0, groundY - 60, W, 60);
+
+  // Water shimmer
+  for (let x = 0; x < W; x += 8) {
+    if (Math.random() > 0.6) {
+      ctx.fillStyle = `rgba(74, 158, 255, ${Math.random() * 0.15})`;
+      ctx.fillRect(x, groundY - 60 + Math.random() * 55, 6, 2);
+    }
+  }
+
+  // === STATUE OF LIBERTY (large, left-center) ===
+  const sx = W * 0.28; // center x of statue
+  const baseY = groundY - 60; // above water line
+  const scale = Math.min(W / 900, H / 600) * 1.1;
+  const s = (v) => v * scale;
+
+  // Pedestal base - wide trapezoid
+  ctx.fillStyle = '#667766';
+  ctx.fillRect(sx - s(60), baseY - s(50), s(120), s(50));
+  ctx.fillStyle = '#778877';
+  ctx.fillRect(sx - s(50), baseY - s(90), s(100), s(42));
+  ctx.fillStyle = '#6b8b6b';
+  ctx.fillRect(sx - s(40), baseY - s(120), s(80), s(32));
+
+  // Star-shaped fort base hint
+  ctx.fillStyle = '#556655';
+  ctx.fillRect(sx - s(70), baseY - s(40), s(140), s(10));
+
+  // Body / robe
+  const robeColor = '#5a9a7a';
+  const robeLight = '#6aaa8a';
+  const robeDark = '#4a8a6a';
+  // Main robe body
+  ctx.fillStyle = robeColor;
+  ctx.fillRect(sx - s(25), baseY - s(220), s(50), s(100));
+  // Robe widens at bottom
+  ctx.fillStyle = robeDark;
+  ctx.fillRect(sx - s(35), baseY - s(170), s(70), s(50));
+  ctx.fillStyle = robeColor;
+  ctx.fillRect(sx - s(30), baseY - s(175), s(60), s(55));
+
+  // Robe folds
+  ctx.fillStyle = robeDark;
+  ctx.fillRect(sx - s(10), baseY - s(170), s(3), s(45));
+  ctx.fillRect(sx + s(8), baseY - s(165), s(3), s(40));
+  ctx.fillRect(sx - s(22), baseY - s(155), s(3), s(30));
+
+  // Left arm holding tablet
+  ctx.fillStyle = robeLight;
+  ctx.fillRect(sx - s(35), baseY - s(210), s(14), s(50));
+  // Tablet
+  ctx.fillStyle = '#7ab89a';
+  ctx.fillRect(sx - s(38), baseY - s(220), s(18), s(30));
+  ctx.fillStyle = '#5a9878';
+  ctx.fillRect(sx - s(36), baseY - s(218), s(14), s(26));
+
+  // Right arm raised with torch
+  ctx.fillStyle = robeLight;
+  ctx.fillRect(sx + s(20), baseY - s(250), s(12), s(55));
+  // Forearm angled up
+  ctx.fillStyle = robeLight;
+  ctx.fillRect(sx + s(24), baseY - s(290), s(10), s(45));
+
+  // Hand
+  ctx.fillStyle = '#8aba9a';
+  ctx.fillRect(sx + s(23), baseY - s(298), s(12), s(12));
+
+  // Torch base
+  ctx.fillStyle = '#9aca9a';
+  ctx.fillRect(sx + s(25), baseY - s(320), s(8), s(25));
+
+  // Torch cup
+  ctx.fillStyle = '#b8860b';
+  ctx.fillRect(sx + s(22), baseY - s(335), s(14), s(18));
+  ctx.fillStyle = '#daa520';
+  ctx.fillRect(sx + s(24), baseY - s(332), s(10), s(12));
+
+  // Flame - animated glow
+  ctx.fillStyle = '#ff8c00';
+  ctx.fillRect(sx + s(25), baseY - s(352), s(8), s(18));
+  ctx.fillStyle = '#ffd700';
+  ctx.fillRect(sx + s(26), baseY - s(358), s(6), s(14));
+  ctx.fillStyle = '#ffee88';
+  ctx.fillRect(sx + s(27), baseY - s(362), s(4), s(10));
+
+  // Flame glow
+  ctx.fillStyle = 'rgba(255, 200, 50, 0.15)';
+  ctx.beginPath();
+  ctx.arc(sx + s(29), baseY - s(345), s(35), 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head
+  ctx.fillStyle = robeColor;
+  ctx.fillRect(sx - s(12), baseY - s(245), s(24), s(28));
+  // Face
+  ctx.fillStyle = '#7aba9a';
+  ctx.fillRect(sx - s(8), baseY - s(240), s(16), s(18));
+
+  // Crown with 7 rays
+  ctx.fillStyle = robeLight;
+  ctx.fillRect(sx - s(15), baseY - s(258), s(30), s(15));
+  const rays = 7;
+  for (let i = 0; i < rays; i++) {
+    const rx = sx - s(14) + (s(28) / (rays - 1)) * i;
+    ctx.fillStyle = '#6aaa8a';
+    ctx.fillRect(rx, baseY - s(278), s(3), s(22));
+    ctx.fillStyle = '#8aca9a';
+    ctx.fillRect(rx, baseY - s(282), s(3), s(6));
+  }
+
+  // === Manhattan skyline (background, right side) ===
+  const bldgs = [
+    // x-offset%, width, height, hasSpire, color
+    [0.50, 45, 180, false, '#141830'],
+    [0.54, 35, 220, true, '#181c38'],
+    [0.59, 50, 260, false, '#141830'],
+    [0.64, 30, 310, true, '#1a1e3a'], // Empire State silhouette
+    [0.68, 55, 200, false, '#161a35'],
+    [0.73, 40, 240, false, '#141830'],
+    [0.77, 60, 190, false, '#181c38'],
+    [0.82, 35, 280, true, '#1a1e3a'],
+    [0.86, 50, 210, false, '#161a35'],
+    [0.90, 45, 170, false, '#141830'],
+    [0.94, 40, 230, false, '#181c38'],
+  ];
+
+  bldgs.forEach(([xp, bw, bh, spire, col]) => {
+    const bx = W * xp;
+    const by = groundY - 60;
+    ctx.fillStyle = col;
+    ctx.fillRect(bx, by - bh, bw, bh);
+
+    // Windows
+    for (let wy = by - bh + 10; wy < by - 5; wy += 10) {
+      for (let wx = bx + 4; wx < bx + bw - 4; wx += 8) {
+        if (Math.random() > 0.35) {
+          ctx.fillStyle = `rgba(255, 220, 100, ${0.3 + Math.random() * 0.5})`;
+          ctx.fillRect(wx, wy, 4, 6);
+        }
+      }
+    }
+
+    if (spire) {
+      ctx.fillStyle = '#333';
+      ctx.fillRect(bx + bw / 2 - 2, by - bh - 40, 4, 40);
+      ctx.fillStyle = '#ff3333';
+      ctx.fillRect(bx + bw / 2 - 3, by - bh - 44, 6, 6);
+    }
+  });
+
+  // Ground - dark cobblestone
+  drawGround(ctx, W, H, groundY, '#1a2a1a', '#253525', '#0d1a0d');
+}
+
+// ═══════════════════════════════════════════════════════
+// LONDON - Big Ben / Elizabeth Tower + Parliament
+// ═══════════════════════════════════════════════════════
+function drawLondon(ctx, W, H, groundY) {
+  // Sky - moody overcast London night
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+  skyGrad.addColorStop(0, '#0a0a18');
+  skyGrad.addColorStop(0.3, '#141428');
+  skyGrad.addColorStop(0.6, '#1e1e30');
+  skyGrad.addColorStop(1, '#252535');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, groundY);
+
+  drawStars(ctx, W, groundY * 0.3);
+
+  // Fog layer
+  ctx.fillStyle = 'rgba(150, 150, 180, 0.04)';
+  ctx.fillRect(0, groundY * 0.5, W, groundY * 0.5);
+
+  // Thames river
+  ctx.fillStyle = '#0e1525';
+  ctx.fillRect(0, groundY - 50, W, 50);
+  for (let x = 0; x < W; x += 6) {
+    if (Math.random() > 0.7) {
+      ctx.fillStyle = `rgba(100, 120, 160, ${Math.random() * 0.12})`;
+      ctx.fillRect(x, groundY - 50 + Math.random() * 45, 5, 2);
+    }
+  }
+
+  const scale = Math.min(W / 900, H / 600) * 1.1;
+  const s = (v) => v * scale;
+
+  // === BIG BEN / ELIZABETH TOWER (prominent, left-center) ===
+  const bx = W * 0.3;
+  const baseY = groundY - 50;
+
+  // Tower base
+  const towerW = s(70);
+  const towerH = s(380);
+  ctx.fillStyle = '#b8a472';
+  ctx.fillRect(bx - towerW/2, baseY - towerH, towerW, towerH);
+
+  // Tower darker edges
+  ctx.fillStyle = '#a08a5a';
+  ctx.fillRect(bx - towerW/2, baseY - towerH, s(8), towerH);
+  ctx.fillRect(bx + towerW/2 - s(8), baseY - towerH, s(8), towerH);
+
+  // Horizontal bands
+  for (let y = baseY - towerH + s(30); y < baseY; y += s(40)) {
+    ctx.fillStyle = '#c4aa72';
+    ctx.fillRect(bx - towerW/2 - s(3), y, towerW + s(6), s(5));
+  }
+
+  // Gothic window pairs down the tower
+  for (let y = baseY - towerH + s(80); y < baseY - s(20); y += s(35)) {
+    // Left window
+    ctx.fillStyle = '#3a3020';
+    ctx.fillRect(bx - s(20), y, s(14), s(24));
+    ctx.fillStyle = '#4a4030';
+    ctx.fillRect(bx - s(19), y, s(12), s(3)); // pointed top
+    // Right window
+    ctx.fillStyle = '#3a3020';
+    ctx.fillRect(bx + s(6), y, s(14), s(24));
+    ctx.fillStyle = '#4a4030';
+    ctx.fillRect(bx + s(7), y, s(12), s(3));
+  }
+
+  // Clock section - larger decorative area
+  const clockY = baseY - towerH + s(20);
+  ctx.fillStyle = '#c8b478';
+  ctx.fillRect(bx - towerW/2 - s(6), clockY, towerW + s(12), s(55));
+  ctx.fillStyle = '#d4c488';
+  ctx.fillRect(bx - towerW/2 - s(3), clockY + s(3), towerW + s(6), s(49));
+
+  // Clock face - large white circle
+  const clockR = s(22);
+  ctx.fillStyle = '#eeeedd';
+  ctx.beginPath();
+  ctx.arc(bx, clockY + s(27), clockR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Clock border
+  ctx.strokeStyle = '#8a7a4a';
+  ctx.lineWidth = s(3);
+  ctx.beginPath();
+  ctx.arc(bx, clockY + s(27), clockR + s(2), 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Clock hands
+  ctx.fillStyle = '#222';
+  // Minute hand (long)
+  ctx.fillRect(bx - s(1.5), clockY + s(27) - clockR + s(5), s(3), clockR - s(3));
+  // Hour hand (short, angled)
+  ctx.save();
+  ctx.translate(bx, clockY + s(27));
+  ctx.rotate(Math.PI / 6 * 2); // ~2 o'clock
+  ctx.fillRect(-s(1.5), -clockR * 0.6, s(3), clockR * 0.6);
+  ctx.restore();
+
+  // Clock center dot
+  ctx.fillStyle = '#333';
+  ctx.beginPath();
+  ctx.arc(bx, clockY + s(27), s(3), 0, Math.PI * 2);
+  ctx.fill();
+
+  // Spire / pyramid roof
+  const spireBaseY = baseY - towerH;
+  ctx.fillStyle = '#8a7a5a';
+  ctx.beginPath();
+  ctx.moveTo(bx - towerW/2 - s(4), spireBaseY);
+  ctx.lineTo(bx + towerW/2 + s(4), spireBaseY);
+  ctx.lineTo(bx + s(12), spireBaseY - s(50));
+  ctx.lineTo(bx - s(12), spireBaseY - s(50));
+  ctx.closePath();
+  ctx.fill();
+
+  // Upper spire
+  ctx.fillStyle = '#7a6a4a';
+  ctx.beginPath();
+  ctx.moveTo(bx - s(12), spireBaseY - s(50));
+  ctx.lineTo(bx + s(12), spireBaseY - s(50));
+  ctx.lineTo(bx + s(4), spireBaseY - s(100));
+  ctx.lineTo(bx - s(4), spireBaseY - s(100));
+  ctx.closePath();
+  ctx.fill();
+
+  // Needle
+  ctx.fillStyle = '#666';
+  ctx.fillRect(bx - s(1.5), spireBaseY - s(130), s(3), s(32));
+
+  // Light at top
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(bx - s(3), spireBaseY - s(134), s(6), s(6));
+  ctx.fillStyle = 'rgba(255, 204, 0, 0.15)';
+  ctx.beginPath();
+  ctx.arc(bx, spireBaseY - s(131), s(20), 0, Math.PI * 2);
+  ctx.fill();
+
+  // Clock glow
+  ctx.fillStyle = 'rgba(255, 240, 180, 0.08)';
+  ctx.beginPath();
+  ctx.arc(bx, clockY + s(27), s(50), 0, Math.PI * 2);
+  ctx.fill();
+
+  // === Houses of Parliament (extending right from Big Ben) ===
+  const parlX = bx + towerW / 2 + s(5);
+  const parlW = s(300);
+  const parlH = s(120);
+  ctx.fillStyle = '#9a8a5a';
+  ctx.fillRect(parlX, baseY - parlH, parlW, parlH);
+
+  // Parliament windows
+  for (let y = baseY - parlH + s(12); y < baseY - s(8); y += s(18)) {
+    for (let x = parlX + s(8); x < parlX + parlW - s(8); x += s(16)) {
+      ctx.fillStyle = Math.random() > 0.3 ? '#ffd76688' : '#3a3020';
+      ctx.fillRect(x, y, s(10), s(13));
+      // Gothic arch hint
+      ctx.fillStyle = '#a89a6a';
+      ctx.fillRect(x, y - s(2), s(10), s(3));
+    }
+  }
+
+  // Parliament roof crenellations
+  for (let x = parlX; x < parlX + parlW; x += s(12)) {
+    ctx.fillStyle = '#8a7a4a';
+    ctx.fillRect(x, baseY - parlH - s(10), s(8), s(12));
+  }
+
+  // Small towers on parliament
+  for (let i = 0; i < 3; i++) {
+    const tx = parlX + s(60) + i * s(100);
+    ctx.fillStyle = '#a89a6a';
+    ctx.fillRect(tx - s(10), baseY - parlH - s(40), s(20), s(42));
+    ctx.fillStyle = '#8a7a4a';
+    ctx.beginPath();
+    ctx.moveTo(tx - s(12), baseY - parlH - s(40));
+    ctx.lineTo(tx + s(12), baseY - parlH - s(40));
+    ctx.lineTo(tx, baseY - parlH - s(60));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Background buildings silhouette - The Shard, Gherkin hints
+  ctx.fillStyle = '#12121e';
+  // The Shard shape on far right
+  ctx.beginPath();
+  ctx.moveTo(W * 0.88, groundY - 50);
+  ctx.lineTo(W * 0.88 + 20, groundY - 50);
+  ctx.lineTo(W * 0.89 + 5, groundY - 350);
+  ctx.closePath();
+  ctx.fill();
+
+  // City buildings left
+  const leftBldgs = [
+    [0.02, 35, 140], [0.06, 40, 100], [0.10, 30, 170],
+    [0.13, 45, 120], [0.17, 35, 90],
+  ];
+  leftBldgs.forEach(([xp, bw, bh]) => {
+    ctx.fillStyle = '#14142a';
+    ctx.fillRect(W * xp, groundY - 50 - bh, bw, bh);
+    for (let wy = groundY - 50 - bh + 8; wy < groundY - 55; wy += 10) {
+      for (let wx = W * xp + 4; wx < W * xp + bw - 4; wx += 7) {
+        if (Math.random() > 0.4) {
+          ctx.fillStyle = `rgba(255, 200, 100, ${0.2 + Math.random() * 0.3})`;
+          ctx.fillRect(wx, wy, 3, 5);
+        }
+      }
+    }
+  });
+
+  drawGround(ctx, W, H, groundY, '#1e1e2a', '#28283a', '#141420');
+}
+
+// ═══════════════════════════════════════════════════════
+// SINGAPORE - Marina Bay Sands + Supertrees
+// ═══════════════════════════════════════════════════════
+function drawSingapore(ctx, W, H, groundY) {
+  // Sky - warm tropical night with teal tones
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+  skyGrad.addColorStop(0, '#050818');
+  skyGrad.addColorStop(0.4, '#0a1525');
+  skyGrad.addColorStop(0.7, '#102030');
+  skyGrad.addColorStop(1, '#152535');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, groundY);
+
+  drawStars(ctx, W, groundY * 0.4);
+
+  // Marina Bay water
+  ctx.fillStyle = '#081520';
+  ctx.fillRect(0, groundY - 55, W, 55);
+  for (let x = 0; x < W; x += 5) {
+    if (Math.random() > 0.5) {
+      ctx.fillStyle = `rgba(0, 200, 150, ${Math.random() * 0.08})`;
+      ctx.fillRect(x, groundY - 55 + Math.random() * 50, 4, 2);
+    }
+  }
+
+  const scale = Math.min(W / 900, H / 600) * 1.1;
+  const s = (v) => v * scale;
+
+  // === MARINA BAY SANDS (center) ===
+  const cx = W * 0.48;
+  const baseY = groundY - 55;
+
+  // Three towers - slightly angled/tapered
+  const towerW = s(40);
+  const towerH = s(300);
+  const towerGap = s(55);
+  const towers = [cx - towerGap, cx, cx + towerGap];
+
+  towers.forEach((tx, i) => {
+    // Tower body - slight taper (wider at bottom)
+    const topW = towerW * 0.85;
+    ctx.fillStyle = '#8899bb';
+    ctx.beginPath();
+    ctx.moveTo(tx - towerW/2, baseY);
+    ctx.lineTo(tx - topW/2, baseY - towerH);
+    ctx.lineTo(tx + topW/2, baseY - towerH);
+    ctx.lineTo(tx + towerW/2, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Glass windows grid
+    for (let y = baseY - towerH + s(8); y < baseY - s(4); y += s(8)) {
+      for (let frac = 0.15; frac < 0.9; frac += 0.18) {
+        const wy = y;
+        const interpol = (baseY - y) / towerH;
+        const curW = towerW * (1 - interpol * 0.15);
+        const wx = tx - curW/2 + curW * frac;
+        const lit = Math.random();
+        if (lit > 0.3) {
+          ctx.fillStyle = `rgba(180, 220, 255, ${0.3 + Math.random() * 0.5})`;
+        } else {
+          ctx.fillStyle = '#556688';
+        }
+        ctx.fillRect(wx, wy, s(5), s(5));
+      }
+    }
+  });
+
+  // SkyPark on top - the famous boat shape
+  const parkY = baseY - towerH;
+  const parkW = towerGap * 2 + towerW + s(60);
+  ctx.fillStyle = '#667799';
+  ctx.fillRect(cx - parkW/2, parkY - s(8), parkW, s(10));
+
+  // Curved overhang on right (the boat prow)
+  ctx.fillStyle = '#778899';
+  ctx.beginPath();
+  ctx.moveTo(cx + parkW/2, parkY - s(8));
+  ctx.quadraticCurveTo(cx + parkW/2 + s(50), parkY - s(12), cx + parkW/2 + s(40), parkY + s(5));
+  ctx.lineTo(cx + parkW/2, parkY + s(2));
+  ctx.closePath();
+  ctx.fill();
+
+  // Infinity pool (blue strip on top)
+  ctx.fillStyle = '#3388cc';
+  ctx.fillRect(cx - parkW/2 + s(20), parkY - s(14), parkW * 0.7, s(7));
+  // Pool shimmer
+  ctx.fillStyle = 'rgba(100, 200, 255, 0.3)';
+  ctx.fillRect(cx - parkW/2 + s(30), parkY - s(13), s(20), s(4));
+  ctx.fillRect(cx + s(10), parkY - s(12), s(15), s(3));
+
+  // Trees on SkyPark
+  for (let i = 0; i < 5; i++) {
+    const treX = cx - parkW/2 + s(40) + i * s(40);
+    ctx.fillStyle = '#2a5a2a';
+    ctx.fillRect(treX, parkY - s(22), s(3), s(12));
+    ctx.fillStyle = '#3a7a3a';
+    ctx.beginPath();
+    ctx.arc(treX + s(1.5), parkY - s(26), s(6), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // === SUPERTREE GROVE (left side) ===
+  const supertrees = [
+    [W * 0.08, s(180), s(30)],
+    [W * 0.14, s(220), s(38)],
+    [W * 0.21, s(160), s(26)],
+  ];
+
+  supertrees.forEach(([tx, th, canopyR]) => {
+    // Trunk - tapered organic shape
+    ctx.fillStyle = '#4a3a5a';
+    ctx.fillRect(tx - s(4), baseY - th, s(8), th);
+    // Trunk gets wider at base
+    ctx.fillRect(tx - s(6), baseY - s(20), s(12), s(20));
+
+    // Structural "branches" leading to canopy
+    for (let angle = -0.8; angle <= 0.8; angle += 0.4) {
+      ctx.strokeStyle = '#5a4a6a';
+      ctx.lineWidth = s(2);
+      ctx.beginPath();
+      ctx.moveTo(tx, baseY - th + s(10));
+      ctx.lineTo(tx + Math.sin(angle) * canopyR * 0.8, baseY - th - canopyR * 0.3);
+      ctx.stroke();
+    }
+
+    // Canopy - mushroom shape with LED lights
+    ctx.fillStyle = '#2a6a5a';
+    ctx.beginPath();
+    ctx.ellipse(tx, baseY - th - canopyR * 0.2, canopyR, canopyR * 0.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // LED light dots on canopy
+    const colors = ['#ff00ff', '#00ffff', '#ff6600', '#00ff88', '#ffff00'];
+    for (let i = 0; i < 12; i++) {
+      const angle = (Math.PI * 2 / 12) * i;
+      const lx = tx + Math.cos(angle) * canopyR * 0.7;
+      const ly = baseY - th - canopyR * 0.2 + Math.sin(angle) * canopyR * 0.3;
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.fillRect(lx - s(1.5), ly - s(1.5), s(3), s(3));
+    }
+  });
+
+  // Aerial walkway between supertrees
+  ctx.strokeStyle = '#5a4a6a';
+  ctx.lineWidth = s(2);
+  ctx.beginPath();
+  ctx.moveTo(W * 0.08, baseY - s(155));
+  ctx.quadraticCurveTo(W * 0.11, baseY - s(140), W * 0.14, baseY - s(190));
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(W * 0.14, baseY - s(190));
+  ctx.quadraticCurveTo(W * 0.175, baseY - s(175), W * 0.21, baseY - s(135));
+  ctx.stroke();
+
+  // Background CBD skyline
+  const bgBldgs = [
+    [0.70, 30, 200], [0.74, 45, 260], [0.78, 35, 180],
+    [0.82, 50, 300], [0.87, 40, 220], [0.91, 35, 170],
+    [0.95, 30, 250],
+  ];
+  bgBldgs.forEach(([xp, bw, bh]) => {
+    ctx.fillStyle = `rgba(20, 30, 50, 0.8)`;
+    ctx.fillRect(W * xp, baseY - bh, bw, bh);
+    for (let wy = baseY - bh + 6; wy < baseY - 3; wy += 8) {
+      for (let wx = W * xp + 3; wx < W * xp + bw - 3; wx += 7) {
+        if (Math.random() > 0.3) {
+          ctx.fillStyle = `rgba(150, 230, 200, ${0.15 + Math.random() * 0.3})`;
+          ctx.fillRect(wx, wy, 3, 4);
+        }
+      }
+    }
+  });
+
+  // Water reflections of MBS
+  ctx.globalAlpha = 0.12;
+  towers.forEach((tx) => {
+    ctx.fillStyle = '#8899bb';
+    ctx.fillRect(tx - towerW * 0.3, baseY + 5, towerW * 0.6, s(40));
+  });
+  ctx.globalAlpha = 1;
+
+  drawGround(ctx, W, H, groundY, '#0a2018', '#153028', '#081810');
+}
+
+// ═══════════════════════════════════════════════════════
+// DUBAI - Burj Khalifa + Burj Al Arab
+// ═══════════════════════════════════════════════════════
+function drawDubai(ctx, W, H, groundY) {
+  // Sky - warm desert night with orange horizon
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+  skyGrad.addColorStop(0, '#0a0510');
+  skyGrad.addColorStop(0.3, '#15101e');
+  skyGrad.addColorStop(0.6, '#2a1a15');
+  skyGrad.addColorStop(0.85, '#3a2510');
+  skyGrad.addColorStop(1, '#4a3018');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, groundY);
+
+  drawStars(ctx, W, groundY * 0.35);
+
+  // Desert heat haze at horizon
+  ctx.fillStyle = 'rgba(80, 50, 20, 0.08)';
+  ctx.fillRect(0, groundY - 100, W, 100);
+
+  const scale = Math.min(W / 900, H / 600) * 1.1;
+  const s = (v) => v * scale;
+  const baseY = groundY;
+
+  // === BURJ KHALIFA (tall, center-left) ===
+  const bkx = W * 0.35;
+
+  // Main central spine
+  ctx.fillStyle = '#c0c8d8';
+  ctx.fillRect(bkx - s(12), baseY - s(450), s(24), s(450));
+
+  // Stepped setbacks - the Y-shaped cross section creates stepped tiers
+  const tiers = [
+    { y: s(450), w: s(80), h: s(120) },
+    { y: s(330), w: s(65), h: s(90) },
+    { y: s(240), w: s(50), h: s(70) },
+    { y: s(170), w: s(36), h: s(55) },
+    { y: s(115), w: s(28), h: s(40) },
+  ];
+
+  tiers.forEach(tier => {
+    ctx.fillStyle = '#a8b0c0';
+    ctx.fillRect(bkx - tier.w / 2, baseY - tier.y, tier.w, tier.h);
+    // Windows
+    for (let wy = baseY - tier.y + s(5); wy < baseY - tier.y + tier.h - s(3); wy += s(6)) {
+      for (let wx = bkx - tier.w / 2 + s(4); wx < bkx + tier.w / 2 - s(4); wx += s(7)) {
+        if (Math.random() > 0.3) {
+          ctx.fillStyle = `rgba(200, 220, 255, ${0.2 + Math.random() * 0.4})`;
+          ctx.fillRect(wx, wy, s(4), s(4));
+        }
+      }
+    }
+    // Horizontal band at each tier change
+    ctx.fillStyle = '#8890a0';
+    ctx.fillRect(bkx - tier.w / 2 - s(2), baseY - tier.y, tier.w + s(4), s(3));
+  });
+
+  // Spire / antenna
+  ctx.fillStyle = '#ddd';
+  ctx.fillRect(bkx - s(2), baseY - s(500), s(4), s(55));
+  ctx.fillStyle = '#eee';
+  ctx.fillRect(bkx - s(1), baseY - s(520), s(2), s(25));
+
+  // Top light
+  ctx.fillStyle = '#ff3333';
+  ctx.fillRect(bkx - s(3), baseY - s(524), s(6), s(6));
+  ctx.fillStyle = 'rgba(255, 50, 50, 0.12)';
+  ctx.beginPath();
+  ctx.arc(bkx, baseY - s(521), s(15), 0, Math.PI * 2);
+  ctx.fill();
+
+  // === BURJ AL ARAB (right side, sail shape) ===
+  const bax = W * 0.72;
+  const baH = s(250);
+
+  // Island platform
+  ctx.fillStyle = '#8b7355';
+  ctx.beginPath();
+  ctx.ellipse(bax, baseY - s(5), s(80), s(12), 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sail shape - the distinctive V
+  ctx.fillStyle = '#d8e8f0';
+  ctx.beginPath();
+  ctx.moveTo(bax - s(40), baseY - s(10));
+  ctx.lineTo(bax - s(10), baseY - baH);
+  ctx.lineTo(bax + s(15), baseY - baH);
+  ctx.lineTo(bax + s(50), baseY - s(10));
+  ctx.closePath();
+  ctx.fill();
+
+  // Inner concave area (darker)
+  ctx.fillStyle = '#7ab8d8';
+  ctx.beginPath();
+  ctx.moveTo(bax - s(25), baseY - s(20));
+  ctx.quadraticCurveTo(bax + s(5), baseY - baH * 0.5, bax - s(5), baseY - baH + s(15));
+  ctx.lineTo(bax + s(10), baseY - baH + s(15));
+  ctx.quadraticCurveTo(bax + s(15), baseY - baH * 0.5, bax + s(35), baseY - s(20));
+  ctx.closePath();
+  ctx.fill();
+
+  // Horizontal cross-beams
+  for (let y = baseY - s(30); y > baseY - baH + s(20); y -= s(22)) {
+    const frac = (baseY - y) / baH;
+    const lw = s(60) * (1 - frac * 0.5);
+    ctx.fillStyle = '#c0d0e0';
+    ctx.fillRect(bax - lw / 2, y, lw, s(2));
+  }
+
+  // Helipad
+  ctx.fillStyle = '#90a0b0';
+  ctx.fillRect(bax - s(3), baseY - baH - s(8), s(30), s(10));
+  ctx.fillStyle = '#70808f';
+  ctx.beginPath();
+  ctx.arc(bax + s(12), baseY - baH - s(3), s(8), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff44';
+  ctx.fillRect(bax + s(8), baseY - baH - s(5), s(8), s(2));
+  ctx.fillRect(bax + s(11), baseY - baH - s(7), s(2), s(8));
+
+  // Palm trees near Burj Al Arab
+  drawPalmTree(ctx, bax - s(70), baseY, s);
+  drawPalmTree(ctx, bax + s(65), baseY, s);
+
+  // Background Dubai skyline
+  const bgBldgs = [
+    [0.05, 30, 140], [0.09, 25, 100], [0.13, 40, 160],
+    [0.17, 35, 120], [0.50, 30, 180], [0.54, 45, 140],
+    [0.58, 35, 200], [0.88, 30, 150], [0.92, 40, 120],
+  ];
+  bgBldgs.forEach(([xp, bw, bh]) => {
+    ctx.fillStyle = '#201818';
+    ctx.fillRect(W * xp, baseY - bh, bw, bh);
+    for (let wy = baseY - bh + 6; wy < baseY - 3; wy += 8) {
+      for (let wx = W * xp + 3; wx < W * xp + bw - 3; wx += 7) {
+        if (Math.random() > 0.4) {
+          ctx.fillStyle = `rgba(255, 200, 100, ${0.15 + Math.random() * 0.3})`;
+          ctx.fillRect(wx, wy, 3, 5);
+        }
+      }
+    }
+  });
+
+  // Sand dune shapes in foreground
+  drawGround(ctx, W, H, groundY, '#4a3820', '#5a4828', '#3a2a15');
+  // Sand texture
+  for (let x = 0; x < W; x += 3) {
+    if (Math.random() > 0.5) {
+      ctx.fillStyle = `rgba(100, 80, 40, ${Math.random() * 0.3})`;
+      ctx.fillRect(x, groundY + Math.random() * 70, 3, 2);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// TOKYO - Tokyo Tower + Shibuya neon
+// ═══════════════════════════════════════════════════════
+function drawTokyo(ctx, W, H, groundY) {
+  // Sky - dark with hints of neon glow pollution
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+  skyGrad.addColorStop(0, '#050510');
+  skyGrad.addColorStop(0.3, '#100a1e');
+  skyGrad.addColorStop(0.6, '#1a1028');
+  skyGrad.addColorStop(1, '#201530');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, groundY);
+
+  drawStars(ctx, W, groundY * 0.25);
+
+  // Neon glow haze in sky
+  ctx.fillStyle = 'rgba(255, 50, 100, 0.02)';
+  ctx.fillRect(0, groundY * 0.4, W, groundY * 0.6);
+  ctx.fillStyle = 'rgba(50, 100, 255, 0.02)';
+  ctx.fillRect(0, groundY * 0.5, W * 0.5, groundY * 0.5);
+
+  const scale = Math.min(W / 900, H / 600) * 1.1;
+  const s = (v) => v * scale;
+  const baseY = groundY;
+
+  // === TOKYO TOWER (center, large) ===
+  const tx = W * 0.38;
+  const towerH = s(420);
+  const towerBaseW = s(120);
+
+  // Main lattice structure - two legs forming A shape
+  // Left leg
+  ctx.fillStyle = '#ee3333';
+  ctx.beginPath();
+  ctx.moveTo(tx - towerBaseW / 2, baseY);
+  ctx.lineTo(tx - s(8), baseY - towerH);
+  ctx.lineTo(tx - s(3), baseY - towerH);
+  ctx.lineTo(tx - towerBaseW / 2 + s(14), baseY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Right leg
+  ctx.beginPath();
+  ctx.moveTo(tx + towerBaseW / 2, baseY);
+  ctx.lineTo(tx + s(8), baseY - towerH);
+  ctx.lineTo(tx + s(3), baseY - towerH);
+  ctx.lineTo(tx + towerBaseW / 2 - s(14), baseY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Cross braces (alternating red and white)
+  for (let i = 0; i < 18; i++) {
+    const frac = i / 18;
+    const y = baseY - frac * towerH;
+    const halfW = (towerBaseW / 2) * (1 - frac * 0.87);
+    const col = i % 2 === 0 ? '#ffffff' : '#ee3333';
+    ctx.fillStyle = col;
+    ctx.fillRect(tx - halfW - s(2), y - s(4), halfW * 2 + s(4), s(5));
+  }
+
+  // Main observation deck (lower, larger)
+  const deck1Y = baseY - towerH * 0.35;
+  const deck1W = towerBaseW * 0.65;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(tx - deck1W / 2, deck1Y - s(10), deck1W, s(22));
+  ctx.fillStyle = '#dddddd';
+  ctx.fillRect(tx - deck1W / 2 - s(6), deck1Y - s(6), deck1W + s(12), s(4));
+  ctx.fillRect(tx - deck1W / 2 - s(6), deck1Y + s(8), deck1W + s(12), s(4));
+  // Windows on observation deck
+  for (let x = tx - deck1W / 2 + s(5); x < tx + deck1W / 2 - s(5); x += s(8)) {
+    ctx.fillStyle = '#aaccff88';
+    ctx.fillRect(x, deck1Y - s(6), s(5), s(16));
+  }
+
+  // Special observation deck (upper, smaller)
+  const deck2Y = baseY - towerH * 0.62;
+  const deck2W = towerBaseW * 0.3;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(tx - deck2W / 2, deck2Y - s(8), deck2W, s(16));
+  ctx.fillStyle = '#dddddd';
+  ctx.fillRect(tx - deck2W / 2 - s(4), deck2Y - s(5), deck2W + s(8), s(3));
+  ctx.fillRect(tx - deck2W / 2 - s(4), deck2Y + s(5), deck2W + s(8), s(3));
+
+  // Antenna on top
+  ctx.fillStyle = '#ee3333';
+  ctx.fillRect(tx - s(2.5), baseY - towerH - s(60), s(5), s(65));
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(tx - s(1.5), baseY - towerH - s(80), s(3), s(25));
+
+  // Top light
+  ctx.fillStyle = '#ff0000';
+  ctx.fillRect(tx - s(4), baseY - towerH - s(84), s(8), s(6));
+  ctx.fillStyle = 'rgba(255, 0, 0, 0.12)';
+  ctx.beginPath();
+  ctx.arc(tx, baseY - towerH - s(81), s(18), 0, Math.PI * 2);
+  ctx.fill();
+
+  // === NEON SHIBUYA BUILDINGS (right side) ===
+  const neonBldgs = [
+    { x: W * 0.58, w: s(70), h: s(200), signs: ['#ff00ff', '#00ffff'] },
+    { x: W * 0.65, w: s(55), h: s(260), signs: ['#ff3366', '#ffff00'] },
+    { x: W * 0.72, w: s(80), h: s(180), signs: ['#00ff88', '#ff6600'] },
+    { x: W * 0.80, w: s(50), h: s(300), signs: ['#ff0066', '#0088ff'] },
+    { x: W * 0.86, w: s(65), h: s(220), signs: ['#ffcc00', '#ff00ff'] },
+    { x: W * 0.93, w: s(55), h: s(170), signs: ['#00ffcc', '#ff3333'] },
+  ];
+
+  neonBldgs.forEach(b => {
+    // Building body
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(b.x, baseY - b.h, b.w, b.h);
+
+    // Windows
+    for (let wy = baseY - b.h + s(8); wy < baseY - s(5); wy += s(9)) {
+      for (let wx = b.x + s(4); wx < b.x + b.w - s(4); wx += s(8)) {
+        if (Math.random() > 0.3) {
+          ctx.fillStyle = `rgba(200, 200, 255, ${0.15 + Math.random() * 0.25})`;
+          ctx.fillRect(wx, wy, s(5), s(6));
+        }
+      }
+    }
+
+    // Neon signs
+    b.signs.forEach((col, i) => {
+      const signY = baseY - b.h + s(30) + i * s(60);
+      const signW = b.w * 0.8;
+      const signH = s(20);
+      if (signY < baseY - s(20)) {
+        ctx.fillStyle = col;
+        ctx.fillRect(b.x + (b.w - signW) / 2, signY, signW, signH);
+        // Neon glow
+        ctx.fillStyle = col.slice(0, 7) + '15';
+        ctx.fillRect(b.x + (b.w - signW) / 2 - s(5), signY - s(3), signW + s(10), signH + s(6));
+        // Text lines
+        ctx.fillStyle = '#ffffff88';
+        ctx.fillRect(b.x + (b.w - signW) / 2 + s(4), signY + s(5), signW - s(8), s(3));
+        ctx.fillRect(b.x + (b.w - signW) / 2 + s(8), signY + s(11), signW - s(16), s(3));
+      }
+    });
+  });
+
+  // Left side - quieter traditional buildings with a temple hint
+  ctx.fillStyle = '#181828';
+  ctx.fillRect(W * 0.02, baseY - s(100), s(60), s(100));
+  ctx.fillRect(W * 0.08, baseY - s(130), s(50), s(130));
+  ctx.fillRect(W * 0.14, baseY - s(80), s(45), s(80));
+
+  // Temple roof shape
+  ctx.fillStyle = '#2a1a2a';
+  ctx.beginPath();
+  ctx.moveTo(W * 0.02 - s(5), baseY - s(100));
+  ctx.lineTo(W * 0.02 + s(30), baseY - s(125));
+  ctx.lineTo(W * 0.02 + s(65), baseY - s(100));
+  ctx.closePath();
+  ctx.fill();
+
+  // Cherry blossom tree (small accent)
+  const treeX = W * 0.20;
+  ctx.fillStyle = '#3a2020';
+  ctx.fillRect(treeX, baseY - s(50), s(4), s(50));
+  // Blossom canopy
+  const blossomCols = ['#ff88aa', '#ffaacc', '#ff6699', '#ffccdd'];
+  for (let i = 0; i < 20; i++) {
+    ctx.fillStyle = blossomCols[i % blossomCols.length];
+    ctx.beginPath();
+    ctx.arc(
+      treeX + s(2) + (Math.random() - 0.5) * s(30),
+      baseY - s(50) - Math.random() * s(30),
+      s(3 + Math.random() * 4),
+      0, Math.PI * 2
+    );
+    ctx.fill();
+  }
+
+  drawGround(ctx, W, H, groundY, '#1a1020', '#241828', '#0f0a15');
+}
+
+// ═══════════════════════════════════════════════════════
+// SHARED HELPERS
+// ═══════════════════════════════════════════════════════
+function drawStars(ctx, W, maxY) {
+  for (let i = 0; i < 180; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * maxY;
+    const size = Math.random() < 0.85 ? 1 : 2;
+    const b = Math.floor(100 + Math.random() * 155);
+    ctx.fillStyle = `rgb(${b}, ${b}, ${b + 30})`;
+    ctx.fillRect(Math.floor(x), Math.floor(y), size, size);
+  }
+}
+
+function drawGround(ctx, W, H, groundY, c1, c2, c3) {
+  // Main ground
+  ctx.fillStyle = c1;
+  ctx.fillRect(0, groundY, W, H - groundY);
+  // Sidewalk edge
+  ctx.fillStyle = '#555';
+  ctx.fillRect(0, groundY, W, 4);
+  // Road
+  ctx.fillStyle = c3;
+  ctx.fillRect(0, groundY + 20, W, 30);
+  // Road markings
+  ctx.fillStyle = '#888';
+  for (let x = 0; x < W; x += 40) {
+    ctx.fillRect(x, groundY + 33, 20, 3);
+  }
+  // Sidewalk detail
+  for (let x = 0; x < W; x += 6) {
+    if (Math.random() > 0.5) {
+      ctx.fillStyle = c2;
+      ctx.fillRect(x, groundY + 4 + Math.random() * 14, 4, 3);
+    }
+  }
+}
+
+function drawPalmTree(ctx, x, baseY, s) {
+  // Trunk
+  ctx.fillStyle = '#6b5030';
+  ctx.fillRect(x - s(3), baseY - s(80), s(6), s(80));
+  // Trunk texture
+  for (let y = baseY - s(75); y < baseY; y += s(8)) {
+    ctx.fillStyle = '#5a4020';
+    ctx.fillRect(x - s(4), y, s(8), s(2));
+  }
+  // Fronds
+  const frondColor = '#2a6a2a';
+  for (let angle = -2.5; angle <= 2.5; angle += 0.5) {
+    ctx.strokeStyle = frondColor;
+    ctx.lineWidth = s(3);
+    ctx.beginPath();
+    ctx.moveTo(x, baseY - s(80));
+    ctx.quadraticCurveTo(
+      x + Math.sin(angle) * s(40),
+      baseY - s(90) - Math.abs(angle) * s(5),
+      x + Math.sin(angle) * s(55),
+      baseY - s(65) + Math.abs(angle) * s(8)
+    );
+    ctx.stroke();
+  }
+}
+
+// ─── CHARACTER RENDERING ──────────────────────────────
+function drawPlayer() {
+  const canvas = document.getElementById('player');
+  canvas.width = 64;
+  canvas.height = 80;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 64, 80);
+  const s = 1.3;
+
+  // Shadow
+  px(ctx, 14*s, 72, 28*s, 6, 'rgba(0,0,0,0.3)');
+  // Shoes
+  px(ctx, 14*s, 64, 12*s, 7, '#1a1a1a');
+  px(ctx, 30*s, 64, 12*s, 7, '#1a1a1a');
+  // Legs
+  px(ctx, 16*s, 49, 10*s, 16, '#2a4a8e');
+  px(ctx, 30*s, 49, 10*s, 16, '#2a4a8e');
+  // Body
+  px(ctx, 12*s, 28, 32*s, 22, '#4a9eff');
+  // Ubyx logo on shirt
+  px(ctx, 23*s, 34, 10*s, 8, '#ffffff');
+  px(ctx, 25*s, 36, 6*s, 4, '#4a9eff');
+  // Arms
+  px(ctx, 5*s, 30, 9*s, 16, '#4a9eff');
+  px(ctx, 42*s, 30, 9*s, 16, '#4a9eff');
+  // Hands
+  px(ctx, 5*s, 44, 9*s, 5, '#e8b98a');
+  px(ctx, 42*s, 44, 9*s, 5, '#e8b98a');
+  // Neck
+  px(ctx, 21*s, 23, 14*s, 7, '#e8b98a');
+  // Head
+  px(ctx, 16*s, 5, 24*s, 20, '#e8b98a');
+  // Hair
+  px(ctx, 16*s, 2, 24*s, 8, '#2a1a0a');
+  px(ctx, 16*s, 5, 5*s, 10, '#2a1a0a');
+  // Eyes
+  px(ctx, 21*s, 12, 5*s, 5, '#fff');
+  px(ctx, 31*s, 12, 5*s, 5, '#fff');
+  px(ctx, 23*s, 13, 3*s, 4, '#1a1a3e');
+  px(ctx, 33*s, 13, 3*s, 4, '#1a1a3e');
+  // Smile
+  px(ctx, 24*s, 19, 9*s, 2, '#c97a5a');
+}
+
+function drawNPC(hubIndex) {
+  const canvas = document.getElementById('npc');
+  canvas.width = 64;
+  canvas.height = 80;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 64, 80);
+  const s = 1.3;
+
+  const npcStyles = [
+    { suit: '#2a2a4a', shirt: '#ffffff', tie: '#cc3333', hair: '#4a3a2a', skin: '#d4a574' },
+    { suit: '#1a1a2a', shirt: '#cce0ff', tie: '#aa2222', hair: '#8b4513', skin: '#f0c8a0' },
+    { suit: '#2a3a2a', shirt: '#ffffff', tie: '#2288aa', hair: '#1a1a1a', skin: '#e8c49a' },
+    { suit: '#3a3020', shirt: '#f5f0e0', tie: '#886622', hair: '#1a1a1a', skin: '#c68642' },
+    { suit: '#1a1a3a', shirt: '#ffffff', tie: '#cc2266', hair: '#1a1a1a', skin: '#f0d0a0' },
+  ];
+  const c = npcStyles[hubIndex];
+
+  px(ctx, 14*s, 72, 28*s, 6, 'rgba(0,0,0,0.3)');
+  px(ctx, 14*s, 64, 12*s, 7, '#1a1a1a');
+  px(ctx, 30*s, 64, 12*s, 7, '#1a1a1a');
+  px(ctx, 16*s, 49, 10*s, 16, c.suit);
+  px(ctx, 30*s, 49, 10*s, 16, c.suit);
+  px(ctx, 12*s, 28, 32*s, 22, c.suit);
+  px(ctx, 18*s, 30, 20*s, 16, c.shirt);
+  px(ctx, 26*s, 30, 5*s, 14, c.tie);
+  px(ctx, 5*s, 30, 9*s, 16, c.suit);
+  px(ctx, 42*s, 30, 9*s, 16, c.suit);
+  px(ctx, 5*s, 44, 9*s, 5, c.skin);
+  px(ctx, 42*s, 44, 9*s, 5, c.skin);
+  px(ctx, 21*s, 23, 14*s, 7, c.skin);
+  px(ctx, 16*s, 5, 24*s, 20, c.skin);
+  px(ctx, 16*s, 2, 24*s, 8, c.hair);
+  px(ctx, 36*s, 5, 5*s, 10, c.hair);
+  px(ctx, 21*s, 12, 5*s, 5, '#fff');
+  px(ctx, 31*s, 12, 5*s, 5, '#fff');
+  px(ctx, 22*s, 13, 3*s, 4, '#1a1a3e');
+  px(ctx, 32*s, 13, 3*s, 4, '#1a1a3e');
+  px(ctx, 24*s, 19, 9*s, 2, '#aa6644');
+}
+
+// ─── UI HELPERS ────────────────────────────────────────
+function updateProgressBar() {
+  const totalQ = HUBS.length * 2;
+  const answered = state.currentHub * 2 + state.currentQuestion;
+  const pct = (answered / totalQ) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `GLOBAL ADOPTION: ${Math.round(pct)}%`;
+  document.querySelectorAll('.hub-marker').forEach((m, i) => {
+    m.classList.remove('active', 'completed');
+    if (i < state.currentHub) m.classList.add('completed');
+    else if (i === state.currentHub) m.classList.add('active');
+  });
+}
+
+function updateLives() {
+  const hearts = [];
+  for (let i = 0; i < 3; i++) hearts.push(i < state.lives ? '\u2665' : '\u2661');
+  document.getElementById('lives-display').innerHTML = hearts.join(' ');
+}
+
+function updateScore() {
+  document.getElementById('score-display').textContent = `SCORE: ${state.score}`;
+}
+
+function showDialogue(speaker, text) {
+  const box = document.getElementById('dialogue-box');
+  box.classList.add('visible');
+  document.getElementById('speaker-name').textContent = speaker;
+  document.getElementById('dialogue-text').textContent = '';
+  document.getElementById('choices-container').innerHTML = '';
+  document.getElementById('continue-prompt').classList.remove('visible');
+
+  let i = 0;
+  const textEl = document.getElementById('dialogue-text');
+  const interval = setInterval(() => {
+    if (i < text.length) { textEl.textContent += text[i]; i++; }
+    else { clearInterval(interval); document.getElementById('continue-prompt').classList.add('visible'); }
+  }, 18);
+
+  box.onclick = () => {
+    if (i < text.length) {
+      clearInterval(interval);
+      textEl.textContent = text;
+      i = text.length;
+      document.getElementById('continue-prompt').classList.add('visible');
+    }
+  };
+}
+
+function showQuestion(hub, qIndex) {
+  const q = hub.questions[qIndex];
+  const box = document.getElementById('dialogue-box');
+  box.classList.add('visible');
+  box.onclick = null;
+  document.getElementById('speaker-name').textContent = `${hub.npcName} - Q${qIndex + 1}/2`;
+  document.getElementById('dialogue-text').textContent = q.text;
+  document.getElementById('continue-prompt').classList.remove('visible');
+
+  const container = document.getElementById('choices-container');
+  container.innerHTML = '';
+  const shuffled = [...q.choices].sort(() => Math.random() - 0.5);
+
+  shuffled.forEach((choice, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = `${String.fromCharCode(65 + idx)}) ${choice.text}`;
+    btn.onclick = () => handleAnswer(choice.correct, btn, q);
+    container.appendChild(btn);
+  });
+  state.answered = false;
+}
+
+function handleAnswer(isCorrect, btn, question) {
+  if (state.answered) return;
+  state.answered = true;
+  document.querySelectorAll('.choice-btn').forEach(b => b.style.pointerEvents = 'none');
+
+  if (isCorrect) {
+    btn.classList.add('correct');
+    state.score += 100;
+    state.totalCorrect++;
+    updateScore();
+    spawnParticles(true);
+    setTimeout(() => {
+      document.getElementById('dialogue-text').textContent = `CORRECT! ${question.explanation}`;
+      document.getElementById('choices-container').innerHTML = '';
+      document.getElementById('speaker-name').textContent = '[ CORRECT! +100 PTS ]';
+      document.getElementById('continue-prompt').classList.add('visible');
+      document.getElementById('continue-prompt').onclick = () => advanceGame();
+      waitForContinue(advanceGame);
+    }, 800);
+  } else {
+    btn.classList.add('wrong');
+    state.lives--;
+    updateLives();
+    spawnParticles(false);
+    document.querySelectorAll('.choice-btn').forEach(b => {
+      const txt = b.textContent.substring(3);
+      if (txt === question.choices.find(c => c.correct).text) b.classList.add('correct');
+    });
+    if (state.lives <= 0) { setTimeout(() => gameOver(), 1200); return; }
+    setTimeout(() => {
+      document.getElementById('dialogue-text').textContent = `WRONG! ${question.explanation}`;
+      document.getElementById('choices-container').innerHTML = '';
+      document.getElementById('speaker-name').textContent = `[ INCORRECT - ${state.lives} ${state.lives === 1 ? 'LIFE' : 'LIVES'} LEFT ]`;
+      document.getElementById('continue-prompt').classList.add('visible');
+      document.getElementById('continue-prompt').onclick = () => advanceGame();
+      waitForContinue(advanceGame);
+    }, 1200);
+  }
+}
+
+function waitForContinue(callback) {
+  const handler = (e) => {
+    if (e.code === 'Space' || e.code === 'Enter') { document.removeEventListener('keydown', handler); callback(); }
+  };
+  document.addEventListener('keydown', handler);
+  document.getElementById('continue-prompt').onclick = () => { document.removeEventListener('keydown', handler); callback(); };
+}
+
+function spawnParticles(success) {
+  const colors = success ? ['#00ff88', '#4a9eff', '#ffd700'] : ['#ff4444', '#ff6666', '#ff8888'];
+  for (let i = 0; i < 15; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = (4 + Math.random() * 6) + 'px';
+    p.style.width = size; p.style.height = size;
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.left = (window.innerWidth / 2 + (Math.random() - 0.5) * 200) + 'px';
+    p.style.top = (window.innerHeight / 2 + (Math.random() - 0.5) * 100) + 'px';
+    document.getElementById('game-container').appendChild(p);
+    p.animate([
+      { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+      { transform: `translate(${(Math.random()-0.5)*200}px, ${-Math.random()*150-50}px) scale(0)`, opacity: 0 }
+    ], { duration: 800, easing: 'ease-out' });
+    setTimeout(() => p.remove(), 800);
+  }
+}
+
+// ─── GAME FLOW ─────────────────────────────────────────
+function startGame() {
+  document.getElementById('title-screen').style.display = 'none';
+  state = { currentHub: 0, currentQuestion: 0, score: 0, lives: 3, phase: 'transition', answered: false, totalCorrect: 0 };
+  updateScore(); updateLives(); updateProgressBar();
+  transitionToHub(0);
+}
+
+function transitionToHub(hubIndex) {
+  state.phase = 'transition';
+  const hub = HUBS[hubIndex];
+  const overlay = document.getElementById('transition-overlay');
+  document.getElementById('transition-city-name').textContent = hub.name;
+  document.getElementById('transition-city-name').style.color = hub.color;
+  document.getElementById('transition-subtitle').textContent = hub.subtitle;
+  document.getElementById('transition-subtitle').style.color = hub.color + '88';
+  overlay.classList.add('visible');
+  document.getElementById('dialogue-box').classList.remove('visible');
+
+  setTimeout(() => {
+    drawScene(hubIndex);
+    drawPlayer();
+    drawNPC(hubIndex);
+    document.getElementById('player').style.left = '60px';
+    document.getElementById('npc').classList.add('visible');
+  }, 500);
+
+  setTimeout(() => {
+    overlay.classList.remove('visible');
+    setTimeout(() => {
+      document.getElementById('player').style.left = (window.innerWidth - 200) + 'px';
+      const banner = document.getElementById('info-banner');
+      banner.textContent = `LEVEL ${hubIndex + 1}: ${hub.name} - ${hub.subtitle}`;
+      banner.style.color = hub.color;
+      banner.classList.add('visible');
+      setTimeout(() => { banner.classList.remove('visible'); showIntro(hubIndex); }, 2000);
+    }, 300);
+  }, 2000);
+}
+
+function showIntro(hubIndex) {
+  state.phase = 'intro';
+  const hub = HUBS[hubIndex];
+  showDialogue(`${hub.npcName} - ${hub.npcTitle}`, hub.intro);
+  waitForContinue(() => { state.phase = 'question'; showQuestion(hub, 0); });
+}
+
+function advanceGame() {
+  state.currentQuestion++;
+  if (state.currentQuestion >= 2) {
+    state.currentHub++;
+    state.currentQuestion = 0;
+    updateProgressBar();
+    if (state.currentHub >= HUBS.length) { victory(); return; }
+    const box = document.getElementById('dialogue-box');
+    document.getElementById('speaker-name').textContent = '[ HUB CLEARED! ]';
+    document.getElementById('dialogue-text').textContent = `${HUBS[state.currentHub - 1].name} cleared! Travelling to ${HUBS[state.currentHub].name}...`;
+    document.getElementById('choices-container').innerHTML = '';
+    document.getElementById('continue-prompt').classList.add('visible');
+    waitForContinue(() => { box.classList.remove('visible'); transitionToHub(state.currentHub); });
+  } else {
+    updateProgressBar();
+    showQuestion(HUBS[state.currentHub], state.currentQuestion);
+  }
+}
+
+function victory() {
+  state.phase = 'victory';
+  document.getElementById('dialogue-box').classList.remove('visible');
+  document.getElementById('progress-bar').style.width = '100%';
+  document.getElementById('progress-text').textContent = 'GLOBAL ADOPTION: 100%';
+  document.querySelectorAll('.hub-marker').forEach(m => { m.classList.remove('active'); m.classList.add('completed'); });
+  setTimeout(() => {
+    document.getElementById('final-score-val').textContent = state.score;
+    document.getElementById('victory-screen').classList.add('visible');
+    for (let i = 0; i < 5; i++) setTimeout(() => spawnParticles(true), i * 300);
+  }, 1000);
+}
+
+function gameOver() {
+  state.phase = 'gameover';
+  document.getElementById('dialogue-box').classList.remove('visible');
+  setTimeout(() => document.getElementById('gameover-screen').classList.add('visible'), 500);
+}
+
+function resetGame() {
+  document.getElementById('victory-screen').classList.remove('visible');
+  document.getElementById('gameover-screen').classList.remove('visible');
+  document.getElementById('dialogue-box').classList.remove('visible');
+  document.getElementById('npc').classList.remove('visible');
+  startGame();
+}
+
+// ─── EVENT LISTENERS ───────────────────────────────────
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('restart-btn').addEventListener('click', resetGame);
+document.getElementById('retry-btn').addEventListener('click', resetGame);
+document.addEventListener('keydown', (e) => {
+  if (state.phase === 'title' && (e.code === 'Space' || e.code === 'Enter')) startGame();
+});
+
+window.addEventListener('resize', () => {
+  if (state.phase !== 'title' && state.phase !== 'victory' && state.phase !== 'gameover') {
+    drawScene(state.currentHub);
+  }
+});
+</script>
+</body>
+</html>
