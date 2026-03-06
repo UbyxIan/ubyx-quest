@@ -638,6 +638,14 @@
           <div class="creator-row" id="skin-row"></div>
         </div>
         <div class="creator-section">
+          <h3>HAIRSTYLE</h3>
+          <div class="creator-row" id="hairstyle-row"></div>
+        </div>
+        <div class="creator-section" id="haircolor-section">
+          <h3>HAIR COLOUR</h3>
+          <div class="creator-row" id="haircolor-row"></div>
+        </div>
+        <div class="creator-section">
           <h3>OUTFIT</h3>
           <div class="creator-row" id="outfit-row"></div>
         </div>
@@ -823,7 +831,7 @@ const HUBS = [
   }
 ];
 
-// ─── SKIN TONES & OUTFITS ─────────────────────────────
+// ─── SKIN TONES, HAIR, & OUTFITS ──────────────────────
 const SKIN_TONES = [
   { name: 'Light',       hex: '#f5deb3' },
   { name: 'Fair',        hex: '#e8c49a' },
@@ -831,6 +839,24 @@ const SKIN_TONES = [
   { name: 'Tan',         hex: '#c68642' },
   { name: 'Brown',       hex: '#8d5524' },
   { name: 'Dark',        hex: '#4a2c0a' },
+];
+
+const HAIR_COLORS = [
+  { name: 'Black',       hex: '#1a1008' },
+  { name: 'Dark Brown',  hex: '#3a2510' },
+  { name: 'Brown',       hex: '#6b4c2a' },
+  { name: 'Auburn',      hex: '#8b3a1a' },
+  { name: 'Blonde',      hex: '#c4a240' },
+  { name: 'Grey',        hex: '#888888' },
+];
+
+// Hairstyle ID determines which drawHair_* function is called
+const HAIRSTYLES = [
+  { id: 'bald',      name: 'Bald' },
+  { id: 'buzz',      name: 'Buzz Cut' },
+  { id: 'short',     name: 'Short' },
+  { id: 'medium',    name: 'Medium' },
+  { id: 'long',      name: 'Long' },
 ];
 
 const OUTFITS = {
@@ -858,6 +884,8 @@ let state = {
   playerConfig: {
     type: 'a',
     skin: '#d4a574',
+    hairStyle: 'short',
+    hairColor: '#3a2510',
     outfit: OUTFITS.a[0]
   }
 };
@@ -1867,94 +1895,139 @@ function drawPalmTree(ctx, x, baseY, s) {
 }
 
 // ─── CHARACTER RENDERING ──────────────────────────────
+
+// --- Hair drawing functions ---
+// Each receives (ctx, midX, headTopY, headW, s, hc, type)
+//   headTopY = top of the head block, headW = head width, hc = hair colour
+
+function drawHair_bald(ctx, midX, headTopY, headW, s, hc, type) {
+  // No hair — just a subtle skin-tone highlight on top of head
+}
+
+function drawHair_buzz(ctx, midX, headTopY, headW, s, hc, type) {
+  // Very short stubble covering top of head
+  const hw = headW;
+  px(ctx, midX - hw/2, headTopY - 2*s, hw, 5*s, hc);
+  // Thin side coverage
+  px(ctx, midX - hw/2, headTopY + 2*s, 3*s, 5*s, hc);
+  px(ctx, midX + hw/2 - 3*s, headTopY + 2*s, 3*s, 5*s, hc);
+}
+
+function drawHair_short(ctx, midX, headTopY, headW, s, hc, type) {
+  // Short styled — top + one side parting
+  const hw = headW;
+  px(ctx, midX - hw/2, headTopY - 3*s, hw, 7*s, hc);
+  // Side parting (left thicker)
+  px(ctx, midX - hw/2, headTopY + 3*s, 5*s, 8*s, hc);
+  // Slight right coverage
+  px(ctx, midX + hw/2 - 4*s, headTopY + 3*s, 4*s, 5*s, hc);
+}
+
+function drawHair_medium(ctx, midX, headTopY, headW, s, hc, type) {
+  // Medium length — covers top and flows down both sides
+  const hw = headW;
+  px(ctx, midX - hw/2 - 1*s, headTopY - 3*s, hw + 2*s, 8*s, hc);
+  // Left side hair
+  px(ctx, midX - hw/2 - 2*s, headTopY + 2*s, 5*s, 16*s, hc);
+  // Right side hair
+  px(ctx, midX + hw/2 - 3*s, headTopY + 2*s, 5*s, 16*s, hc);
+  // Volume
+  px(ctx, midX - hw/2 - 1*s, headTopY + 5*s, 3*s, 6*s, hc);
+  px(ctx, midX + hw/2 - 2*s, headTopY + 5*s, 3*s, 6*s, hc);
+}
+
+function drawHair_long(ctx, midX, headTopY, headW, s, hc, type) {
+  // Long hair — full coverage, flows past shoulders
+  const hw = headW;
+  px(ctx, midX - hw/2 - 1*s, headTopY - 3*s, hw + 2*s, 9*s, hc);
+  // Left side — flows down past neck
+  px(ctx, midX - hw/2 - 2*s, headTopY + 2*s, 5*s, 26*s, hc);
+  px(ctx, midX - hw/2 - 1*s, headTopY + 5*s, 3*s, 8*s, hc);
+  // Right side — flows down past neck
+  px(ctx, midX + hw/2 - 3*s, headTopY + 2*s, 5*s, 26*s, hc);
+  px(ctx, midX + hw/2 - 2*s, headTopY + 5*s, 3*s, 8*s, hc);
+  // Back hair visible behind shoulders
+  if (type === 'a') {
+    px(ctx, midX - hw/2 - 3*s, headTopY + 22*s, 4*s, 10*s, hc);
+    px(ctx, midX + hw/2 - 1*s, headTopY + 22*s, 4*s, 10*s, hc);
+  } else {
+    px(ctx, midX - hw/2 - 3*s, headTopY + 22*s, 4*s, 12*s, hc);
+    px(ctx, midX + hw/2 - 1*s, headTopY + 22*s, 4*s, 12*s, hc);
+  }
+}
+
+const HAIR_DRAW_FNS = {
+  bald: drawHair_bald,
+  buzz: drawHair_buzz,
+  short: drawHair_short,
+  medium: drawHair_medium,
+  long: drawHair_long,
+};
+
 function renderCharacter(ctx, cw, ch, config) {
-  // Renders the player character at any size onto the given context.
-  // cw/ch = canvas width/height. config = { type, skin, outfit }
   ctx.clearRect(0, 0, cw, ch);
 
-  const s = cw / 56; // scale factor (base design is ~56 units wide)
+  const s = cw / 56;
   const type = config.type;
   const skin = config.skin;
   const o = config.outfit;
+  const hc = config.hairColor;
+  const hairStyle = config.hairStyle;
 
-  // Derive a darker skin shade for smile/details
   const smileDark = darkenColor(skin, 0.7);
-
-  // Hair color — derived from skin to look natural
-  const hairColor = getHairColor(skin);
-
   const midX = cw / 2;
 
   if (type === 'a') {
-    // ─── TYPE A: broader shoulders, short hair ───
-    // Shadow
+    // ─── TYPE A: broader shoulders ───
     px(ctx, midX - 18*s, ch - 8*s, 36*s, 6*s, 'rgba(0,0,0,0.25)');
-    // Shoes
     px(ctx, midX - 18*s, ch - 16*s, 14*s, 8*s, o.shoes);
     px(ctx, midX + 4*s, ch - 16*s, 14*s, 8*s, o.shoes);
-    // Legs
     px(ctx, midX - 16*s, ch - 33*s, 12*s, 18*s, o.legs);
     px(ctx, midX + 4*s, ch - 33*s, 12*s, 18*s, o.legs);
-    // Body (broad)
     px(ctx, midX - 20*s, ch - 56*s, 40*s, 24*s, o.top);
-    // Accent stripe/detail
     px(ctx, midX - 4*s, ch - 52*s, 8*s, 6*s, o.accent);
-    // Arms
     px(ctx, midX - 27*s, ch - 54*s, 9*s, 18*s, o.sleeve);
     px(ctx, midX + 18*s, ch - 54*s, 9*s, 18*s, o.sleeve);
-    // Hands
     px(ctx, midX - 27*s, ch - 37*s, 9*s, 6*s, skin);
     px(ctx, midX + 18*s, ch - 37*s, 9*s, 6*s, skin);
-    // Neck
     px(ctx, midX - 7*s, ch - 62*s, 14*s, 7*s, skin);
     // Head
-    px(ctx, midX - 13*s, ch - 82*s, 26*s, 21*s, skin);
-    // Hair (short, top and side)
-    px(ctx, midX - 13*s, ch - 85*s, 26*s, 8*s, hairColor);
-    px(ctx, midX - 13*s, ch - 80*s, 5*s, 10*s, hairColor);
+    const headW = 26*s;
+    const headTopY = ch - 82*s;
+    px(ctx, midX - 13*s, headTopY, headW, 21*s, skin);
+    // Hair
+    HAIR_DRAW_FNS[hairStyle](ctx, midX, headTopY, headW, s, hc, type);
     // Eyes
     px(ctx, midX - 9*s, ch - 74*s, 6*s, 5*s, '#fff');
     px(ctx, midX + 4*s, ch - 74*s, 6*s, 5*s, '#fff');
     px(ctx, midX - 7*s, ch - 73*s, 3*s, 4*s, '#1a1a3e');
     px(ctx, midX + 6*s, ch - 73*s, 3*s, 4*s, '#1a1a3e');
-    // Smile
     px(ctx, midX - 5*s, ch - 67*s, 10*s, 2*s, smileDark);
   } else {
-    // ─── TYPE B: narrower shoulders, longer hair ───
-    // Shadow
+    // ─── TYPE B: narrower shoulders ───
     px(ctx, midX - 16*s, ch - 8*s, 32*s, 6*s, 'rgba(0,0,0,0.25)');
-    // Shoes
     px(ctx, midX - 15*s, ch - 16*s, 12*s, 8*s, o.shoes);
     px(ctx, midX + 3*s, ch - 16*s, 12*s, 8*s, o.shoes);
-    // Legs
     px(ctx, midX - 13*s, ch - 33*s, 10*s, 18*s, o.legs);
     px(ctx, midX + 3*s, ch - 33*s, 10*s, 18*s, o.legs);
-    // Body (narrower)
     px(ctx, midX - 17*s, ch - 56*s, 34*s, 24*s, o.top);
-    // Accent stripe/detail
     px(ctx, midX - 4*s, ch - 52*s, 8*s, 6*s, o.accent);
-    // Arms
     px(ctx, midX - 24*s, ch - 54*s, 8*s, 18*s, o.sleeve);
     px(ctx, midX + 16*s, ch - 54*s, 8*s, 18*s, o.sleeve);
-    // Hands
     px(ctx, midX - 24*s, ch - 37*s, 8*s, 6*s, skin);
     px(ctx, midX + 16*s, ch - 37*s, 8*s, 6*s, skin);
-    // Neck
     px(ctx, midX - 6*s, ch - 62*s, 12*s, 7*s, skin);
     // Head
-    px(ctx, midX - 12*s, ch - 82*s, 24*s, 21*s, skin);
-    // Hair (longer, flows down sides)
-    px(ctx, midX - 13*s, ch - 85*s, 26*s, 9*s, hairColor);
-    px(ctx, midX - 14*s, ch - 80*s, 5*s, 22*s, hairColor); // left side
-    px(ctx, midX + 9*s, ch - 80*s, 5*s, 22*s, hairColor);  // right side
-    px(ctx, midX - 13*s, ch - 77*s, 3*s, 8*s, hairColor);   // extra volume
-    px(ctx, midX + 10*s, ch - 77*s, 3*s, 8*s, hairColor);
+    const headW = 24*s;
+    const headTopY = ch - 82*s;
+    px(ctx, midX - 12*s, headTopY, headW, 21*s, skin);
+    // Hair
+    HAIR_DRAW_FNS[hairStyle](ctx, midX, headTopY, headW, s, hc, type);
     // Eyes
     px(ctx, midX - 8*s, ch - 74*s, 5*s, 5*s, '#fff');
     px(ctx, midX + 3*s, ch - 74*s, 5*s, 5*s, '#fff');
     px(ctx, midX - 6*s, ch - 73*s, 3*s, 4*s, '#1a1a3e');
     px(ctx, midX + 5*s, ch - 73*s, 3*s, 4*s, '#1a1a3e');
-    // Smile
     px(ctx, midX - 4*s, ch - 67*s, 8*s, 2*s, smileDark);
   }
 }
@@ -1964,15 +2037,6 @@ function darkenColor(hex, factor) {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgb(${Math.floor(r * factor)}, ${Math.floor(g * factor)}, ${Math.floor(b * factor)})`;
-}
-
-function getHairColor(skinHex) {
-  // Map skin tone to a natural-looking hair colour
-  const skinBrightness = parseInt(skinHex.slice(1, 3), 16);
-  if (skinBrightness > 200) return '#6b4c2a';       // light skin → medium brown
-  if (skinBrightness > 180) return '#4a3520';       // fair → dark brown
-  if (skinBrightness > 140) return '#2a1a0a';       // medium → very dark brown
-  return '#1a1008';                                  // dark skin → near black
 }
 
 function drawPlayer() {
@@ -2177,9 +2241,8 @@ function initCreator() {
     btn.textContent = `TYPE ${t.toUpperCase()}`;
     btn.onclick = () => {
       state.playerConfig.type = t;
-      // Reset outfit to first of this type
       state.playerConfig.outfit = OUTFITS[t][0];
-      initCreator(); // re-render all options
+      initCreator();
     };
     typeRow.appendChild(btn);
   });
@@ -2201,6 +2264,44 @@ function initCreator() {
     skinRow.appendChild(swatch);
   });
 
+  // Hairstyle buttons
+  const hairstyleRow = document.getElementById('hairstyle-row');
+  hairstyleRow.innerHTML = '';
+  HAIRSTYLES.forEach(hs => {
+    const btn = document.createElement('button');
+    btn.className = 'type-btn' + (state.playerConfig.hairStyle === hs.id ? ' selected' : '');
+    btn.textContent = hs.name.toUpperCase();
+    btn.onclick = () => {
+      state.playerConfig.hairStyle = hs.id;
+      hairstyleRow.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      // Show/hide hair colour section
+      document.getElementById('haircolor-section').style.display = hs.id === 'bald' ? 'none' : 'block';
+      drawPreview();
+    };
+    hairstyleRow.appendChild(btn);
+  });
+
+  // Hair colour swatches
+  const hairColorRow = document.getElementById('haircolor-row');
+  hairColorRow.innerHTML = '';
+  const hairColorSection = document.getElementById('haircolor-section');
+  hairColorSection.style.display = state.playerConfig.hairStyle === 'bald' ? 'none' : 'block';
+
+  HAIR_COLORS.forEach(hc => {
+    const swatch = document.createElement('div');
+    swatch.className = 'skin-swatch' + (state.playerConfig.hairColor === hc.hex ? ' selected' : '');
+    swatch.style.background = hc.hex;
+    swatch.title = hc.name;
+    swatch.onclick = () => {
+      state.playerConfig.hairColor = hc.hex;
+      hairColorRow.querySelectorAll('.skin-swatch').forEach(s => s.classList.remove('selected'));
+      swatch.classList.add('selected');
+      drawPreview();
+    };
+    hairColorRow.appendChild(swatch);
+  });
+
   // Outfit buttons
   const outfitRow = document.getElementById('outfit-row');
   outfitRow.innerHTML = '';
@@ -2208,7 +2309,6 @@ function initCreator() {
   outfits.forEach(o => {
     const btn = document.createElement('button');
     btn.className = 'outfit-btn' + (state.playerConfig.outfit.name === o.name ? ' selected' : '');
-    // Colour swatch preview
     const swatch = document.createElement('span');
     swatch.className = 'outfit-swatch';
     swatch.style.background = o.top;
