@@ -46,11 +46,10 @@
   /* Player character */
   #player {
     position: absolute;
-    bottom: 80px;
+    bottom: 56px;
     left: 60px;
     z-index: 10;
     image-rendering: pixelated;
-    transition: left 0.8s ease-in-out;
   }
 
   /* NPC */
@@ -584,8 +583,9 @@
 <div id="game-container">
   <canvas id="scene-canvas"></canvas>
 
-  <canvas id="player" width="64" height="80"></canvas>
+  <canvas id="player" width="64" height="100"></canvas>
   <canvas id="npc" width="64" height="80"></canvas>
+
 
   <div id="hud">
     <div id="progress-bar-container">
@@ -889,6 +889,90 @@ let state = {
     outfit: OUTFITS.a[0]
   }
 };
+
+// ─── PLAYER MOVEMENT ──────────────────────────────────
+const keysDown = {};
+let playerX = 60;
+let playerJumpY = 0;
+let playerVY = 0;
+const GRAVITY = 0.6;
+const JUMP_FORCE = -11;
+const MOVE_SPEED = 4;
+let walkTarget = null;
+let walkCallback = null;
+let gameLoopRunning = false;
+
+document.addEventListener('keydown', (e) => {
+  if (['ArrowLeft', 'ArrowRight', 'ArrowUp'].includes(e.code)) {
+    e.preventDefault();
+    keysDown[e.code] = true;
+  }
+});
+document.addEventListener('keyup', (e) => {
+  keysDown[e.code] = false;
+});
+
+function gameLoop() {
+  if (!gameLoopRunning) return;
+  const player = document.getElementById('player');
+  const playablePhases = ['transition', 'intro', 'question', 'result'];
+
+  if (playablePhases.includes(state.phase)) {
+    // Scripted walk-in
+    if (walkTarget !== null) {
+      const dx = walkTarget - playerX;
+      if (Math.abs(dx) < 4) {
+        playerX = walkTarget;
+        const cb = walkCallback;
+        walkTarget = null;
+        walkCallback = null;
+        if (cb) cb();
+      } else {
+        playerX += Math.sign(dx) * 3;
+      }
+    } else {
+      // Player input
+      if (keysDown['ArrowLeft']) playerX -= MOVE_SPEED;
+      if (keysDown['ArrowRight']) playerX += MOVE_SPEED;
+    }
+
+    // Jump
+    if (keysDown['ArrowUp'] && playerJumpY === 0 && playerVY === 0) {
+      playerVY = JUMP_FORCE;
+    }
+
+    // Gravity
+    if (playerJumpY < 0 || playerVY !== 0) {
+      playerVY += GRAVITY;
+      playerJumpY += playerVY;
+      if (playerJumpY >= 0) {
+        playerJumpY = 0;
+        playerVY = 0;
+      }
+    }
+
+    // Clamp to screen
+    const maxX = window.innerWidth - 64;
+    playerX = Math.max(0, Math.min(maxX, playerX));
+
+    // Apply position
+    player.style.left = playerX + 'px';
+    player.style.bottom = (56 - playerJumpY) + 'px';
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+function startGameLoop() {
+  if (!gameLoopRunning) {
+    gameLoopRunning = true;
+    gameLoop();
+  }
+}
+
+function stopGameLoop() {
+  gameLoopRunning = false;
+}
 
 // ─── DRAWING HELPERS ───────────────────────────────────
 function px(ctx, x, y, w, h, color) {
@@ -2042,8 +2126,8 @@ function darkenColor(hex, factor) {
 function drawPlayer() {
   const canvas = document.getElementById('player');
   canvas.width = 64;
-  canvas.height = 80;
-  renderCharacter(canvas.getContext('2d'), 64, 80, state.playerConfig);
+  canvas.height = 100;
+  renderCharacter(canvas.getContext('2d'), 64, 100, state.playerConfig);
 }
 
 function drawPreview() {
@@ -2371,19 +2455,27 @@ function transitionToHub(hubIndex) {
     drawScene(hubIndex);
     drawPlayer();
     drawNPC(hubIndex);
+    playerX = 60;
+    playerJumpY = 0;
+    playerVY = 0;
     document.getElementById('player').style.left = '60px';
+    document.getElementById('player').style.bottom = '56px';
     document.getElementById('npc').classList.add('visible');
+    startGameLoop();
   }, 500);
 
   setTimeout(() => {
     overlay.classList.remove('visible');
     setTimeout(() => {
-      document.getElementById('player').style.left = (window.innerWidth - 200) + 'px';
-      const banner = document.getElementById('info-banner');
-      banner.textContent = `LEVEL ${hubIndex + 1}: ${hub.name} - ${hub.subtitle}`;
-      banner.style.color = hub.color;
-      banner.classList.add('visible');
-      setTimeout(() => { banner.classList.remove('visible'); showIntro(hubIndex); }, 2000);
+      const targetX = window.innerWidth - 200;
+      walkTarget = targetX;
+      walkCallback = () => {
+        const banner = document.getElementById('info-banner');
+        banner.textContent = `LEVEL ${hubIndex + 1}: ${hub.name} - ${hub.subtitle}`;
+        banner.style.color = hub.color;
+        banner.classList.add('visible');
+        setTimeout(() => { banner.classList.remove('visible'); showIntro(hubIndex); }, 2000);
+      };
     }, 300);
   }, 2000);
 }
@@ -2416,6 +2508,7 @@ function advanceGame() {
 
 function victory() {
   state.phase = 'victory';
+  stopGameLoop();
   document.getElementById('dialogue-box').classList.remove('visible');
   document.getElementById('progress-bar').style.width = '100%';
   document.getElementById('progress-text').textContent = 'GLOBAL ADOPTION: 100%';
@@ -2429,6 +2522,7 @@ function victory() {
 
 function gameOver() {
   state.phase = 'gameover';
+  stopGameLoop();
   document.getElementById('dialogue-box').classList.remove('visible');
   setTimeout(() => document.getElementById('gameover-screen').classList.add('visible'), 500);
 }
@@ -2438,6 +2532,11 @@ function resetGame() {
   document.getElementById('gameover-screen').classList.remove('visible');
   document.getElementById('dialogue-box').classList.remove('visible');
   document.getElementById('npc').classList.remove('visible');
+  playerX = 60;
+  playerJumpY = 0;
+  playerVY = 0;
+  walkTarget = null;
+  walkCallback = null;
   showCreator();
 }
 
